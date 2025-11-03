@@ -17,13 +17,14 @@ a partir de listados de alumnos, instrumentos de evaluación y criterios.
 
 Debes tener una carpeta de clase con esta estructura:
 
+```
 /carpetaGeneralCalificaciones/
 ├── proyectoAppsScript
 └── tuCarpetaDeClase/
     ├── listado
     ├── criteriosDeEvaluacion
     └── instrumentos
-
+```
 
 Donde los tres archivos correspondientes a cada clase son hojas de cálculo con una estructura fija.
 
