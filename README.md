@@ -1,72 +1,34 @@
 # Evaluación Automatizada con Google Apps Script
 
-Este proyecto automatiza la creación y actualización de hojas de calificaciones en Google Sheets, 
-a partir de listados de alumnos, instrumentos de evaluación y criterios.
+Este proyecto permite tener un Cuaderno del Profesor en formato de hoja de cálculo de Google de forma que emplea un sistema de calificaciones basada en Competencias, Criterios e Instrumentos de Evaluación que es fácil de mantener y completar.
 
 ---
 
 ## Qué hace
-- Crea automáticamente una hoja de calificaciones por clase (`calificaciones_<nombre>`).
-- Genera hojas individuales de **desglose** y **media** para cada alumno.
-- Inserta fórmulas en la hoja `general` con los promedios trimestrales.
-- Detecta y añade nuevos alumnos desde la hoja `listado`.
 
----
-
-## Estructura esperada en Drive
-
-Debes tener una carpeta de clase con esta estructura:
-
-```
-/carpetaGeneralCalificaciones/
-├── proyectoAppsScript
-└── tuCarpetaDeClase/
-    ├── listado
-    ├── criteriosDeEvaluacion
-    └── instrumentos
-```
-
-Donde los tres archivos correspondientes a cada clase son hojas de cálculo con una estructura fija.
-
-Puedes ver un ejemplo público aquí:  
-
-[Carpeta de ejemplo en Drive](https://drive.google.com/drive/folders/1toUH6mrPhyBBRJA9DyIzLdK8Iwr8HJUU?usp=sharing)
-
-*(solo lectura, sin datos personales)*
-
-También hay una copia de esos archivos de ejemplo en este mismo repositorio. Se pueden tener tantas carpetas para clases distintas como se quiera, siempre que mantengan esa estructura interna.
-
----
+Para cada clase, basándose en el ```listado``` de alumnos, los ```criterios``` de evaluación y una serie de ```instrumentos``` de evaluación por trimestre, crea un desglose de las calificaciones y calcula la media trimestral.
 
 ## Instalación
 
-1. Crea una **copia** de la carpeta de ejemplo en tu Google Drive. Para copiar el proyecto de Apps Script (llamado `creador clase`) es recomendable darle a botón derecho y a copiar. Se creará una copia del proyecto en la raíz de tu Drive, la cual podrás mover a tu carpeta personal de calificaciones. La carpeta con la clase de ejemplo se puede descargar y subir directamente a tu carpeta personal de calificaciones.
-2. Renombra la carpeta de `claseEjemplo` como quieras y rellena los google sheets que contiene con tus datos (ver README.md de ejemplo para saber formato). Es importante que las hojas de cálculo iniciales estén en formato google sheets. Si se intenta usar con otros formatos fallará el builder.
-3. Abre el proyecto de Apps Script `creador clase`.
-4. Una vez dentro del proyecto de Apps Script, abre el archivo `buildProject.gs`, cambia la variable const `CLASS_FOLDER_NAME = "claseEjemplo"` por el nombre que tenga tu carpeta de clase y pulsa `Ejecutar`.
-5. Espera a que la ejecución termine (puede tardar hasta 5 minutos, si no es capaz de terminar antes de que acabe el tiempo máximo de ejecución se puede intentar por lotes) y vuelve al Drive. Se habrá creado una nueva hoja de calificaciones lista para usar.
+Para una correcta instalación y ejemplos de uso, vaya al ```Tutorial.pdf``` que se encuentra en la raíz de este repositorio. El propio tutorial, así como la ```plantillaInicial``` y un Cuaderno del Profesor completo como ejemplo de uso (```ejemploCompleto```) también se pueden acceder desde
+
+[Drive del repositorio](https://drive.google.com/drive/folders/1Wz7NI7SP5aU2EMRdMaSD7-jkM6zbL2Xv?usp=sharing)
 
 ---
 
-## Uso
+## Estructura del repositorio
 
-Una vez se ha construido el archivo de calificaciones para una clase concreta se puede usar manualmente. En la hoja 'general' aparecerá el listado de alumnos de esa clase junto con casillas para las calificaciones de cada trimestre, las cuales se actualizarán automáticamente. Pulsando en el enlace 'Abrir desglose' se abrirá la hoja de calificaciones desglosadas del alumno. Aquí se podrá introducir por cada instrumento de evaluación, las notas de los criterios de evaluación afectados. A la derecha se muestra una media orientativa del instrumento de evaluación en cuestión. También se puede acceder a la hoja 'media' de cada alumno para visualizar la mediad de las competencias hasta el momento. Allí se calculará una media del trimestre que es la que aparece automáticamente en la hoja 'general'.
+- `README.md` — Documentación (este archivo).
+- `LICENSE` — Licencia del proyecto.
+- `src/` — Código fuente del proyecto (archivos de Apps Script):
+	- `calificacionesConstructor.gs` — Lógica para construir las calificaciones por alumno/criterio.
+	- `formatter.gs` — Funciones de formato y utilidades para la hoja de cálculo.
+	- `main.gs` — Entradas principales y funciones de orquestación.
+	- `mediasConstructor.gs` — Cálculo de medias y promedios por trimestre y materia.
 
-## Actualizar datos
+Nota sobre la plantilla de Drive
 
-Se puede añadir manualmente hasta un instrumento de evaluación extra en cada alumno y en cada trimestre. Sin embargo, si se desa añadir un alumno nuevo o algún instrumento a todos los alumnos, hay que ejecutar scripts desde Apps Scripts. 
-
-### Añadir instrumento de evaluación
-
-1. Primero se añade el criterio en el google sheet original 'intrumentos' de esa clase.
-2. Abrimos `creador clase`y buscamos el archivo `actualizarInstrumentos.gs`. Una vez en ese archivo, escribimos la clase que queremos actualizar (nombre de la carpeta) y lo Ejecutamos.
-3. Al acabar, se habrá actualizado la hoja de 'desglose' de todos los alumnos con el nuevo instrumento de evaluación
-
-### Añadir nuevo alumno
-
-1. Primero añadimos el nuevo alumno al google sheet 'listado'.
-2. Abrimos `creador clase`y buscamos el archivo `actualizarListado.gs`. Una vez en ese archivo, escribimos la clase que queremos actualizar (nombre de la carpeta) y lo Ejecutamos.
-3. Al acabar, se habrá añadido el alumno en la hoja 'general' de su clase, así como sus archivos 'desglose' y 'media'
+La `plantillaInicial` disponible en el Drive del repositorio ya contiene un proyecto de Google Apps Script con el código fuente operativo. El código que aparece en esa plantilla también se incluye en la carpeta `src/` de este repositorio por completitud y para facilitar su edición y auditoría local. Puedes usar directamente la plantilla en Drive para comenzar, o bien importar/pegar los archivos de `src/` en tu propio proyecto de Apps Script si prefieres trabajar desde el editor web.
 
 ## Créditos
 Creado por José Manuel Montes Armenteros.  
