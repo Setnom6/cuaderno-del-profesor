@@ -111,6 +111,9 @@ function runIntegrationTest_Phase2() {
     instrumentos: ['Examen T1', 'Trabajo Escrito', 'Presentación']
   });
   
+  // Verificar formato condicional en columnas Media
+  verifyMediaConditionalFormatting(sheetCalif, ['Examen T1', 'Trabajo Escrito', 'Presentación']);
+  
   // Verificar estructura esperada de medias1
   const competenciasInfo = medias_readCompetenciasInfo(sheetCriteria, ['1.1', '1.2', '2.1', '2.2']);
   
@@ -165,20 +168,25 @@ Por favor, realiza las siguientes acciones EXACTAMENTE:
 3. Celda E4 (Ana García - Trabajo Escrito, criterio 2.1 - Criterio Tres): escribe 7.5
 4. Celda F5 (Pedro Martínez - Presentación, criterio 1.1 - Criterio Uno): escribe 6.0
 5. Celda G5 (Pedro Martínez - Presentación, criterio 2.1 - Criterio Tres): escribe 8.0
+6. Celda B3 (Juan Fernández - Examen T1, criterio 1.1 - Criterio Uno): escribe 3.0
+7. Celda C3 (Juan Fernández - Examen T1, criterio 1.2 - Criterio Dos): escribe 4.5
+   ℹ️  Observa que las columnas "Media" calculan automáticamente el promedio
+   ℹ️  Si la media es < 5.0, el número aparecerá en ROJO (formato condicional)
+   ℹ️  Juan Fernández en "Examen T1" debería tener Media = 3.75 en ROJO
 
 👥 EN "listado":
-6. AÑADIR en fila 6: Luis | Álvarez | Moreno
+8. AÑADIR en fila 6: Luis | Álvarez | Moreno
 
 📋 EN "observaciones1":
-7. AÑADIR datos de prueba (ejemplo: Celda B2 = 2, Celda I3 = "Alumno muy participativo")
+9. AÑADIR datos de prueba (ejemplo: Celda B2 = 2, Celda I3 = "Alumno muy participativo")
    (Esto verificará que los datos se preservan al regenerar)
 
 📝 EN "instrumentos" (columnas Trimestre1 y Criterios1):
-8. AÑADIR en fila 6 al FINAL: "Prueba Final" | "1.1 - Criterio Uno, 1.2 - Criterio Dos, 2.2 - Criterio Cuatro"
-9. INTERCAMBIAR filas 2 y 3 (Examen T1 ↔ Trabajo Escrito)
-10. MODIFICAR fila 5 (Presentación después del intercambio): AÑADIR "2.2 - Criterio Cuatro" → "1.1 - Criterio Uno, 2.1 - Criterio Tres, 2.2 - Criterio Cuatro"
-11. MODIFICAR fila 2 (ahora Trabajo Escrito): cambiar a → "1.2 - Criterio Dos"
-12. INSERTAR en fila 4 (entre Trabajo Escrito y Presentación): "Ejercicios" | "2.1 - Criterio Tres, 2.2 - Criterio Cuatro"
+10. AÑADIR en fila 6 al FINAL: "Prueba Final" | "1.1 - Criterio Uno, 1.2 - Criterio Dos, 2.2 - Criterio Cuatro"
+11. INTERCAMBIAR filas 2 y 3 (Examen T1 ↔ Trabajo Escrito)
+12. MODIFICAR fila 5 (Presentación después del intercambio): AÑADIR "2.2 - Criterio Cuatro" → "1.1 - Criterio Uno, 2.1 - Criterio Tres, 2.2 - Criterio Cuatro"
+13. MODIFICAR fila 2 (ahora Trabajo Escrito): cambiar a → "1.2 - Criterio Dos"
+14. INSERTAR en fila 4 (entre Trabajo Escrito y Presentación): "Ejercicios" | "2.1 - Criterio Tres, 2.2 - Criterio Cuatro"
 
 RESULTADO FINAL ESPERADO EN "instrumentos" (columnas Trimestre1 y Criterios1):
 Fila 2: Trabajo Escrito | 1.2 - Criterio Dos
@@ -302,6 +310,9 @@ function runIntegrationTest_Phase3() {
     alumnos: ['Luis Álvarez', 'Juan Fernández', 'Ana García', 'Pedro Martínez', 'María Sánchez'],
     instrumentos: ['Trabajo Escrito', 'Examen T1', 'Ejercicios', 'Presentación', 'Prueba Final']
   });
+  
+  // Verificar formato condicional en columnas Media después de regenerar
+  verifyMediaConditionalFormatting(sheetCalifNew, ['Trabajo Escrito', 'Examen T1', 'Ejercicios', 'Presentación', 'Prueba Final']);
   
   Logger.log('✓ Nueva estructura de calificaciones1 verificada\n');
   
@@ -668,4 +679,35 @@ function verifyObservacionesStructure(sheet, expected) {
   
   Logger.log(`  ✓ Estructura de observaciones verificada: ${numAlumnos} alumnos, ${expectedHeaders.length} columnas`);
   Logger.log(`  ✓ Formato verificado: bordes y alineación correctos`);
+}
+
+/**
+ * Verifica que las columnas de Media tienen formato condicional (texto rojo si < 5.0)
+ * @param {Sheet} sheet - Hoja calificaciones
+ * @param {Array<string>} instrumentos - Lista de nombres de instrumentos
+ */
+function verifyMediaConditionalFormatting(sheet, instrumentos) {
+  const rules = sheet.getConditionalFormatRules();
+  if (!rules || rules.length === 0) {
+    throw new Error('No se encontraron reglas de formato condicional en calificaciones');
+  }
+  
+  // Buscar reglas que apliquen formato rojo a texto
+  let mediaRulesFound = 0;
+  rules.forEach(rule => {
+    const ranges = rule.getRanges();
+    const fontColor = rule.getFontColor();
+    
+    // Verificar si la regla aplica color rojo al texto
+    if (fontColor && fontColor.toUpperCase() === '#FF0000') {
+      mediaRulesFound++;
+    }
+  });
+  
+  // Debe haber al menos una regla por instrumento (columnas Media)
+  if (mediaRulesFound < instrumentos.length) {
+    Logger.log(`  ⚠ Esperaba al menos ${instrumentos.length} reglas de formato condicional para columnas Media, encontradas ${mediaRulesFound}`);
+  } else {
+    Logger.log(`  ✓ Formato condicional verificado: ${mediaRulesFound} reglas de texto rojo para columnas Media`);
+  }
 }

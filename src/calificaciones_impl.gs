@@ -146,22 +146,25 @@ function buildCalificacionesImpl(n, alumnos, instrumentos, claveToColor) {
   // 2.4 Aplicar fórmulas de media (específico de calificaciones)
   calif_applyAverageFormulas(sheetCalif, instrumentos, numAlumnos);
 
-  // 2.5 Aplicar validaciones y formato condicional (específico de calificaciones)
+  // 2.5 Aplicar validación de datos (0-10) y formato condicional
   calif_applyDataValidation(sheetCalif, instrumentos, numAlumnos);
 
-  // 2.6 Aplicar anchos de columna (específico de calificaciones)
+  // 2.6 Aplicar formato condicional a columnas Media (texto rojo si < 5.0)
+  calif_applyMediaConditionalFormatting(sheetCalif, instrumentos, numAlumnos);
+
+  // 2.7 Aplicar anchos de columna (específico de calificaciones)
   calif_applyColumnWidths(sheetCalif, alumnos, instrumentos);
 
-  // 2.7 Aplicar bordes verticales (específico de calificaciones)
+  // 2.8 Aplicar bordes verticales (específico de calificaciones)
   const rowsToBorder = 2 + numAlumnos;
   calif_applyVerticalInstrumentBorders(sheetCalif, instrumentos, rowsToBorder);
 
-  // 2.8 Aplicar formato decimal a datos (función general)
+  // 2.9 Aplicar formato decimal a datos (función general)
   if (numAlumnos > 0 && finalNumCols > 1) {
     applyDecimalFormat(sheetCalif, 3, 2, numAlumnos, finalNumCols - 1);
   }
 
-  // 2.9 Congelar columna de alumnos (función general)
+  // 2.10 Congelar columna de alumnos (función general)
   freezeColumns(sheetCalif, 1);
 
   // ===== LIMPIEZA FINAL =====

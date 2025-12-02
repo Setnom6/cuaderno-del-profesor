@@ -103,6 +103,43 @@ function calif_applyDataValidation(sheet, instrumentos, numAlumnos) {
 }
 
 /**
+ * Aplica formato condicional a las columnas de Media:
+ * - Texto rojo si la media es menor que 5.0
+ * @param {Sheet} sheet
+ * @param {Array<{nombre: string, criterios: Array<string>}>} instrumentos
+ * @param {number} numAlumnos
+ */
+function calif_applyMediaConditionalFormatting(sheet, instrumentos, numAlumnos) {
+  if (!sheet || !instrumentos || numAlumnos <= 0) return;
+  
+  let colPtr = 2;
+  instrumentos.forEach(inst => {
+    const criterios = inst.criterios;
+    const blockSize = criterios.length + 1;
+    const colMedia = colPtr + criterios.length;
+    
+    try {
+      // Rango de la columna Media
+      const mediaRange = sheet.getRange(3, colMedia, numAlumnos, 1);
+      
+      // Formato condicional: texto rojo si < 5.0
+      const redTextRule = SpreadsheetApp.newConditionalFormatRule()
+                           .whenNumberLessThan(5.0)
+                           .setFontColor("#FF0000")
+                           .setRanges([mediaRange])
+                           .build();
+      
+      const rules = sheet.getConditionalFormatRules();
+      sheet.setConditionalFormatRules(rules.concat([redTextRule]));
+    } catch(e) {
+      Logger.log('calif_applyMediaConditionalFormatting: ' + e);
+    }
+    
+    colPtr += blockSize;
+  });
+}
+
+/**
  * Aplica anchos de columna específicos de calificaciones:
  * - Columna 1 basada en longitud máxima de nombres de alumnos
  * - Resto basado en nombre de instrumento y número de criterios
