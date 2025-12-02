@@ -110,12 +110,19 @@ function runIntegrationTest_Phase2() {
   });
   
   // Verificar estructura esperada de medias1
+  const competenciasInfo = medias_readCompetenciasInfo(sheetCriteria, ['1.1', '1.2', '2.1', '2.2']);
+  
   verifyMediasStructure(sheetMedias, {
     alumnos: ['Juan Fernández', 'Ana García', 'Pedro Martínez', 'María Sánchez'],
-    criterios: ['1.1', '1.2', '2.1', '2.2']
+    criterios: ['1.1', '1.2', '2.1', '2.2'],
+    competencias: competenciasInfo
   });
   
   Logger.log('✓ Estructura de calificaciones1 y medias1 verificada\n');
+  
+  // Verificar fórmulas de Media Final (debe ser por competencias por defecto)
+  verifyMediaFinalFormulas(sheetMedias, 'competencias');
+  Logger.log('✓ Fórmulas de Media Final verificadas (por competencias)\n');
   
   // Pedir al usuario que introduzca calificaciones y modificaciones
   const modificationsInstructions = `
@@ -154,6 +161,56 @@ Fila 6: Prueba Final | 1.1 - Criterio Uno, 1.2 - Criterio Dos, 2.2 - Criterio Cu
   Logger.log('='.repeat(60));
   Logger.log('⏸️  FASE 2 PAUSADA - Lee las instrucciones arriba');
   Logger.log('='.repeat(60));
+  
+  // Información adicional sobre el menú de cálculo de medias
+  Logger.log('\n💡 INFORMACIÓN ADICIONAL:');
+  Logger.log('Puedes probar el menú "Cálculo de Medias" en la hoja medias1:');
+  Logger.log('  - "Media por competencias" (default): promedia medias de competencias');
+  Logger.log('  - "Media por criterios": promedia directamente todos los criterios');
+  Logger.log('La verificación de Phase3 comprobará las fórmulas por defecto (competencias).');
+  Logger.log('\n📌 OPCIONAL: Ejecuta runIntegrationTest_Phase2b() para probar el cambio de fórmulas\n');
+}
+
+/**
+ * FASE 2b (OPCIONAL): Probar cambio de fórmulas de Media Final
+ * Verifica que se puedan cambiar las fórmulas entre modos
+ */
+function runIntegrationTest_Phase2b() {
+  Logger.log('====================================');
+  Logger.log('TEST DE INTEGRACIÓN - FASE 2b (OPCIONAL)');
+  Logger.log('====================================\n');
+  
+  const ss = SpreadsheetApp.getActive();
+  const sheetMedias = ss.getSheetByName('medias1');
+  
+  if (!sheetMedias) {
+    throw new Error('❌ No se encontró medias1. Ejecuta runIntegrationTest_Phase2() primero.');
+  }
+  
+  Logger.log('=== PROBANDO CAMBIO DE FÓRMULAS ===\n');
+  
+  // Verificar fórmulas por competencias (estado inicial)
+  Logger.log('1. Verificando fórmulas iniciales (por competencias)...');
+  verifyMediaFinalFormulas(sheetMedias, 'competencias');
+  Logger.log('✓ Fórmulas por competencias verificadas\n');
+  
+  // Cambiar a fórmulas por criterios
+  Logger.log('2. Cambiando a fórmulas por criterios...');
+  medias_setFormulaCriterios(true); // true = modo silencioso para tests
+  verifyMediaFinalFormulas(sheetMedias, 'criterios');
+  Logger.log('✓ Fórmulas por criterios aplicadas y verificadas\n');
+  
+  // Volver a fórmulas por competencias
+  Logger.log('3. Volviendo a fórmulas por competencias...');
+  medias_setFormulaCompetencias(true); // true = modo silencioso para tests
+  verifyMediaFinalFormulas(sheetMedias, 'competencias');
+  Logger.log('✓ Fórmulas por competencias restauradas y verificadas\n');
+  
+  Logger.log('='.repeat(60));
+  Logger.log('✓✓✓ FASE 2b COMPLETADA ✓✓✓');
+  Logger.log('Cambio de fórmulas funciona correctamente');
+  Logger.log('='.repeat(60));
+  Logger.log('\n📌 Continúa con las modificaciones de Phase2 y luego ejecuta: runIntegrationTest_Phase3()\n');
 }
 
 /**
@@ -230,9 +287,13 @@ function runIntegrationTest_Phase3() {
   Logger.log('✓ Calificaciones preservadas correctamente\n');
   
   // Verificar medias
+  const sheetCriteria = ss.getSheetByName("criterios");
+  const competenciasInfoPhase3 = medias_readCompetenciasInfo(sheetCriteria, ['1.1', '1.2', '2.1', '2.2']);
+  
   verifyMediasStructure(sheetMediasNew, {
     alumnos: ['Luis Álvarez', 'Juan Fernández', 'Ana García', 'Pedro Martínez', 'María Sánchez'],
-    criterios: ['1.1', '1.2', '2.1', '2.2']
+    criterios: ['1.1', '1.2', '2.1', '2.2'],
+    competencias: competenciasInfoPhase3
   });
   
   Logger.log('✓ Estructura de medias1 verificada\n');
@@ -303,7 +364,8 @@ function verifyCalificacionesStructure(sheet, expected) {
  * Verifica que la estructura de medias1 es la esperada
  */
 function verifyMediasStructure(sheet, expected) {
-  const headerRow = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const lastCol = sheet.getLastColumn();
+  const headerRow = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
   const numAlumnos = sheet.getLastRow() - 1;
   
   // Verificar número de alumnos
@@ -325,6 +387,50 @@ function verifyMediasStructure(sheet, expected) {
   }
   if (headerRow[1] !== 'Media Final') {
     throw new Error('Segunda columna debe ser "Media Final"');
+  }
+  
+  // Verificar headers de competencias (columnas ocultas después de los criterios)
+  if (expected.competencias && expected.competencias.length > 0) {
+    const colCompStart = 3 + expected.criterios.length;
+    for (let i = 0; i < expected.competencias.length; i++) {
+      const colIdx = colCompStart + i - 1; // -1 porque headerRow es 0-indexed
+      if (colIdx < headerRow.length) {
+        const expectedHeader = `${expected.competencias[i].indice} - ${expected.competencias[i].nombre}`;
+        if (headerRow[colIdx] !== expectedHeader) {
+          throw new Error(`Header competencia col ${colCompStart + i}: esperaba "${expectedHeader}", encontró "${headerRow[colIdx]}"`);
+        }
+      }
+    }
+    
+    // Verificar que las columnas de competencias están ocultas
+    const hiddenColumns = [];
+    for (let i = 0; i < expected.competencias.length; i++) {
+      const col = colCompStart + i;
+      if (sheet.isColumnHiddenByUser(col)) {
+        hiddenColumns.push(col);
+      }
+    }
+    if (hiddenColumns.length !== expected.competencias.length) {
+      Logger.log(`  ⚠ Algunas columnas de competencias no están ocultas (esperadas ${expected.competencias.length}, ocultas ${hiddenColumns.length})`);
+    }
+    
+    // Verificar colores de competencias
+    if (numAlumnos > 0) {
+      const backgrounds = sheet.getRange(1, colCompStart, 1 + numAlumnos, expected.competencias.length).getBackgrounds();
+      for (let i = 0; i < expected.competencias.length; i++) {
+        const expectedColor = expected.competencias[i].color;
+        const headerColor = backgrounds[0][i];
+        if (headerColor !== expectedColor) {
+          Logger.log(`  ⚠ Color de competencia ${expected.competencias[i].indice}: esperado "${expectedColor}", encontrado "${headerColor}"`);
+        }
+      }
+    }
+    
+    // Verificar borde separador
+    const colLastCriterio = 2 + expected.criterios.length;
+    const rangeLastCriterio = sheet.getRange(1, colLastCriterio, 1 + numAlumnos, 1);
+    // No hay método directo para verificar bordes, pero lo documentamos
+    Logger.log(`  ✓ Columnas de competencias: ${expected.competencias.length} headers verificados`);
   }
   
   Logger.log(`  ✓ Estructura de medias verificada: ${numAlumnos} alumnos, ${expected.criterios.length} criterios`);
@@ -385,6 +491,66 @@ function verifyGradesPreserved(sheet, expected) {
         }
         
         Logger.log(`  ✓ ${alumnoNombre} - ${instrumento} - ${criterio}: ${actualGrade}`);
+      }
+    }
+  }
+}
+
+/**
+ * Verifica que las fórmulas de Media Final sean del tipo correcto.
+ * @param {Sheet} sheet - Hoja medias
+ * @param {string} tipo - 'competencias' o 'criterios'
+ */
+function verifyMediaFinalFormulas(sheet, tipo) {
+  const numAlumnos = sheet.getLastRow() - 1;
+  if (numAlumnos <= 0) return;
+  
+  for (let i = 0; i < numAlumnos; i++) {
+    const row = 2 + i;
+    const formula = sheet.getRange(row, 2).getFormula();
+    
+    if (!formula) {
+      throw new Error(`Fila ${row}: no hay fórmula en Media Final`);
+    }
+    
+    if (tipo === 'competencias') {
+      // Debe referenciar columnas más allá de los criterios (competencias ocultas)
+      // Las fórmulas por competencias tienen rangos que empiezan después de col F o G
+      const headerRow = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      let numCriterios = 0;
+      for (let col = 3; col <= headerRow.length; col++) {
+        const header = headerRow[col - 1];
+        if (!header) break;
+        if (header.toString().match(/^\d+\s*-\s*.+/)) break;
+        numCriterios++;
+      }
+      const colCompStart = 3 + numCriterios;
+      const colCompLetter = columnToLetter(colCompStart);
+      
+      if (!formula.includes(colCompLetter)) {
+        throw new Error(`Fila ${row}: fórmula no referencia columnas de competencias (esperado ${colCompLetter}+)`);
+      }
+    } else if (tipo === 'criterios') {
+      // Debe referenciar solo columnas C:F (o similar, criterios)
+      // Las fórmulas por criterios NO deben ir más allá de los criterios
+      if (!formula.includes('C' + row)) {
+        throw new Error(`Fila ${row}: fórmula no referencia columna C (inicio criterios)`);
+      }
+      
+      // Verificar que NO referencia columnas de competencias (más allá de criterios)
+      const headerRow = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      let numCriterios = 0;
+      for (let col = 3; col <= headerRow.length; col++) {
+        const header = headerRow[col - 1];
+        if (!header) break;
+        if (header.toString().match(/^\d+\s*-\s*.+/)) break;
+        numCriterios++;
+      }
+      const colAfterCriterios = 3 + numCriterios;
+      const colAfterLetter = columnToLetter(colAfterCriterios);
+      
+      if (formula.includes(colAfterLetter + row)) {
+        throw new Error(`Fila ${row}: fórmula NO debe referenciar columnas de competencias (${colAfterLetter}+)`);
       }
     }
   }

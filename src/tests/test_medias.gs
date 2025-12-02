@@ -38,6 +38,20 @@ function runMediasTests() {
     results.push('✗ test_medias_buildMediaFinalFormula: ' + e.message);
   }
   
+  try {
+    test_medias_readCompetenciasInfo();
+    results.push('✓ test_medias_readCompetenciasInfo');
+  } catch(e) {
+    results.push('✗ test_medias_readCompetenciasInfo: ' + e.message);
+  }
+  
+  try {
+    test_medias_buildMediaFinalFormulaCriterios();
+    results.push('✓ test_medias_buildMediaFinalFormulaCriterios');
+  } catch(e) {
+    results.push('✗ test_medias_buildMediaFinalFormulaCriterios: ' + e.message);
+  }
+  
   Logger.log(results.join('\n'));
   Logger.log('=== FIN TESTS DE MEDIAS ===\n');
 }
@@ -81,6 +95,45 @@ function test_medias_buildMediaFinalFormula() {
   assertTrue(formula.includes('H5'), 'references end column (6+3-1=8=H)');
 }
 
+function test_medias_readCompetenciasInfo() {
+  // Test con mock de datos - requiere spreadsheet
+  const ss = SpreadsheetApp.getActive();
+  const sheetCriteria = ss.getSheetByName("criterios");
+  
+  if (!sheetCriteria) {
+    Logger.log('⚠ test_medias_readCompetenciasInfo: hoja "criterios" no encontrada, saltando test');
+    return;
+  }
+  
+  // Leer claves reales para el test
+  const clavesLista = medias_readClavesFromCriteria(sheetCriteria);
+  if (clavesLista.length === 0) {
+    Logger.log('⚠ test_medias_readCompetenciasInfo: no hay claves en criterios, saltando test');
+    return;
+  }
+  
+  const competenciasInfo = medias_readCompetenciasInfo(sheetCriteria, clavesLista);
+  
+  // Verificar que retorna un array
+  assertTrue(Array.isArray(competenciasInfo), 'returns array');
+  
+  // Si hay competencias, verificar estructura
+  if (competenciasInfo.length > 0) {
+    const firstComp = competenciasInfo[0];
+    assertTrue(firstComp.hasOwnProperty('indice'), 'has indice property');
+    assertTrue(firstComp.hasOwnProperty('nombre'), 'has nombre property');
+    assertTrue(firstComp.hasOwnProperty('color'), 'has color property');
+    assertTrue(typeof firstComp.indice === 'string', 'indice is string');
+    assertTrue(typeof firstComp.nombre === 'string', 'nombre is string');
+    assertTrue(typeof firstComp.color === 'string', 'color is string');
+    
+    // Verificar que el índice no tiene punto (es "i", no "i.j")
+    assertFalse(firstComp.indice.includes('.'), 'indice should not contain dot');
+    
+    Logger.log(`  → Primera competencia: ${firstComp.indice} - ${firstComp.nombre} (color: ${firstComp.color})`);
+  }
+}
+
 // Helpers de aserción
 function assertEqual(actual, expected, message) {
   if (actual !== expected) {
@@ -92,4 +145,22 @@ function assertTrue(condition, message) {
   if (!condition) {
     throw new Error(`${message}: esperado true`);
   }
+}
+
+function assertFalse(condition, message) {
+  if (condition) {
+    throw new Error(`${message}: esperado false`);
+  }
+}
+
+function test_medias_buildMediaFinalFormulaCriterios() {
+  const formula = medias_buildMediaFinalFormulaCriterios(4, 5);
+  assertTrue(formula.includes('AVERAGEIF'), 'has AVERAGEIF');
+  assertTrue(formula.includes('C5'), 'references start column C5');
+  assertTrue(formula.includes('F5'), 'references end column F5 (C+4-1=F)');
+  assertTrue(formula.includes('<>'), 'filters non-empty values');
+  
+  // Verificar fórmula con 0 criterios
+  const formulaEmpty = medias_buildMediaFinalFormulaCriterios(0, 5);
+  assertEqual(formulaEmpty, "", 'empty formula for 0 criterios');
 }

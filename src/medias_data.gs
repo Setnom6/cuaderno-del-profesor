@@ -86,6 +86,79 @@ function medias_groupClavesByCompetencia(clavesLista) {
 }
 
 /**
+ * Lee la información de competencias desde la hoja "criterios".
+ * Para cada competencia retorna: índice, nombre y color (del primer criterio de esa competencia).
+ * @param {Sheet} sheetCriteria - Hoja "criterios"
+ * @param {Array<string>} clavesLista - Lista de claves de criterios
+ * @returns {Array<{indice: string, nombre: string, color: string}>}
+ */
+function medias_readCompetenciasInfo(sheetCriteria, clavesLista) {
+  if (!sheetCriteria || !clavesLista || clavesLista.length === 0) return [];
+  
+  // Leer headers de la hoja criterios
+  const criteriosHdr = sheetCriteria.getRange(1, 1, 1, sheetCriteria.getLastColumn())
+    .getValues()[0]
+    .map(h => h ? h.toString().trim().toLowerCase() : "");
+  
+  const colIndiceIdx = criteriosHdr.indexOf("indice");
+  const colCompetenciaIdx = criteriosHdr.indexOf("competencia");
+  const colClaveIdx = criteriosHdr.indexOf("clave");
+  
+  if (colIndiceIdx === -1 || colCompetenciaIdx === -1) {
+    return [];
+  }
+  
+  const numCrit = Math.max(0, sheetCriteria.getLastRow() - 1);
+  if (numCrit === 0) return [];
+  
+  // Leer todas las filas de criterios
+  const indicesVals = sheetCriteria.getRange(2, colIndiceIdx + 1, numCrit, 1).getValues().map(r => r[0] ? r[0].toString().trim() : "");
+  const competenciasVals = sheetCriteria.getRange(2, colCompetenciaIdx + 1, numCrit, 1).getValues().map(r => r[0] ? r[0].toString().trim() : "");
+  
+  // Leer colores de la columna clave (o columna D como fallback)
+  let coloresVals;
+  if (colClaveIdx !== -1) {
+    coloresVals = sheetCriteria.getRange(2, colClaveIdx + 1, numCrit, 1).getBackgrounds().map(r => r[0]);
+  } else {
+    coloresVals = sheetCriteria.getRange(2, 4, numCrit, 1).getBackgrounds().map(r => r[0]);
+  }
+  
+  // Agrupar por competencia y extraer el primer criterio de cada una
+  const competenciaMap = {}; // indice -> {nombre, color}
+  
+  for (let i = 0; i < numCrit; i++) {
+    const indice = indicesVals[i];
+    const nombreComp = competenciasVals[i];
+    const color = coloresVals[i];
+    
+    if (!indice || !nombreComp) continue;
+    
+    // Extraer el índice de la competencia (parte antes del punto)
+    const indiceComp = indice.split(".")[0];
+    
+    // Solo guardar el primer criterio de cada competencia
+    if (!competenciaMap[indiceComp]) {
+      competenciaMap[indiceComp] = {
+        indice: indiceComp,
+        nombre: nombreComp,
+        color: color || "#ffffff"
+      };
+    }
+  }
+  
+  // Convertir a array y ordenar por índice
+  const competenciasInfo = Object.keys(competenciaMap)
+    .sort((a, b) => {
+      const numA = parseInt(a);
+      const numB = parseInt(b);
+      return numA - numB;
+    })
+    .map(indice => competenciaMap[indice]);
+  
+  return competenciasInfo;
+}
+
+/**
  * Construye la fórmula de media por criterio.
  * Promedia los valores de ese criterio en todas las columnas de calificaciones donde aparece.
  * @param {number} n - Número de trimestre

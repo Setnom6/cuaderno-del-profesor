@@ -28,10 +28,18 @@ function buildMediasImpl(n, sheetCalif, alumnos, sheetCriteria, claveToColor) {
   const criterioToColumns = medias_getCriterioColumnMap(sheetCalif, clavesLista);
   const competenciaToClaves = medias_groupClavesByCompetencia(clavesLista);
   const competencias = Object.keys(competenciaToClaves);
+  const competenciasInfo = medias_readCompetenciasInfo(sheetCriteria, clavesLista);
 
   // ========== FASE 2: CONSTRUCCIÓN DE HEADERS ==========
   const mediasHeaders = ["Alumno", "Media Final", ...clavesLista];
   sheetMedias.getRange(1, 1, 1, mediasHeaders.length).setValues([mediasHeaders]);
+  
+  // Escribir headers de competencias (columnas ocultas)
+  if (competenciasInfo.length > 0) {
+    const colCompStart = 3 + clavesLista.length;
+    const competenciaHeaders = competenciasInfo.map(comp => `${comp.indice} - ${comp.nombre}`);
+    sheetMedias.getRange(1, colCompStart, 1, competenciaHeaders.length).setValues([competenciaHeaders]);
+  }
 
   // ========== FASE 3: ESCRITURA DE ALUMNOS ==========
   if (alumnos.length > 0) {
@@ -92,11 +100,24 @@ function buildMediasImpl(n, sheetCalif, alumnos, sheetCriteria, claveToColor) {
   }
 
   // ========== FASE 5: FORMATO ==========
-  // Formato general del header
-  applyHeaderFormatting(sheetMedias, 1, 1, 1, mediasHeaders.length);
+  // Formato general del header (incluyendo competencias)
+  const totalHeaders = mediasHeaders.length + competenciasInfo.length;
+  applyHeaderFormatting(sheetMedias, 1, 1, 1, totalHeaders);
 
   // Colores por clave
   medias_applyColorsByClave(sheetMedias, clavesLista, alumnos.length, claveToColor);
+
+  // Colores por competencia
+  if (competenciasInfo.length > 0) {
+    const colCompStart = 3 + clavesLista.length;
+    medias_applyCompetenciaColors(sheetMedias, competenciasInfo, colCompStart, alumnos.length);
+  }
+
+  // Borde separador entre criterios y competencias
+  if (competenciasInfo.length > 0 && clavesLista.length > 0) {
+    const colLastCriterio = 2 + clavesLista.length;
+    medias_applySeparatorBorder(sheetMedias, colLastCriterio, alumnos.length);
+  }
 
   // Formato especial para Media Final
   if (alumnos.length > 0) {
@@ -104,11 +125,11 @@ function buildMediasImpl(n, sheetCalif, alumnos, sheetCriteria, claveToColor) {
   }
 
   // Anchos de columna
-  medias_applyColumnWidths(sheetMedias, alumnos, clavesLista);
+  medias_applyColumnWidths(sheetMedias, alumnos, clavesLista, competenciasInfo);
 
-  // Formato decimal (2 decimales)
-  if (alumnos.length > 0 && clavesLista.length > 0) {
-    applyDecimalFormat(sheetMedias, 2, 2, alumnos.length, 1 + clavesLista.length, 2);
+  // Formato decimal (2 decimales) - incluyendo competencias
+  if (alumnos.length > 0 && totalHeaders > 2) {
+    applyDecimalFormat(sheetMedias, 2, 2, alumnos.length, totalHeaders - 1, 2);
   }
 
   // Formato condicional (rojo si <5)
@@ -118,6 +139,10 @@ function buildMediasImpl(n, sheetCalif, alumnos, sheetCriteria, claveToColor) {
 
   // Freeze primera fila
   freezeRows(sheetMedias, 1);
+  
+  // Activar la hoja medias y crear menú
+  sheetMedias.activate();
+  createMediasMenu();
 
   return sheetMedias;
 }

@@ -77,11 +77,13 @@ function medias_applyConditionalFormatting(sheet, numAlumnos) {
  * - Columna 1 (Alumno): basado en longitud de nombres
  * - Columna 2 (Media Final): fijo 90px
  * - Columnas de criterios: basado en longitud de cada clave
+ * - Columnas de competencias: basado en longitud del header "i - nombreCompetencia"
  * @param {Sheet} sheet
  * @param {Array<Array<string>>} alumnos
  * @param {Array<string>} clavesLista
+ * @param {Array<{indice: string, nombre: string, color: string}>} competenciasInfo - Opcional
  */
-function medias_applyColumnWidths(sheet, alumnos, clavesLista) {
+function medias_applyColumnWidths(sheet, alumnos, clavesLista, competenciasInfo) {
   if (!sheet) return;
   
   // Columna 1: ancho basado en nombres
@@ -101,5 +103,61 @@ function medias_applyColumnWidths(sheet, alumnos, clavesLista) {
   for (let j = 0; j < clavesLista.length; j++) {
     const width = Math.max(80, Math.min(800, Math.round(clavesLista[j].length * 7)));
     setColumnWidth(sheet, 3 + j, width);
+  }
+  
+  // Columnas de competencias (ocultas)
+  if (competenciasInfo && competenciasInfo.length > 0) {
+    const colCompStart = 3 + clavesLista.length;
+    for (let i = 0; i < competenciasInfo.length; i++) {
+      const comp = competenciasInfo[i];
+      const headerText = `${comp.indice} - ${comp.nombre}`;
+      const width = Math.max(120, Math.min(800, Math.round(headerText.length * 7)));
+      setColumnWidth(sheet, colCompStart + i, width);
+    }
+  }
+}
+
+/**
+ * Aplica colores a las columnas de competencias (ocultas).
+ * Colorea header (fila 1) y datos (fila 2+) según el color de cada competencia.
+ * @param {Sheet} sheet
+ * @param {Array<{indice: string, nombre: string, color: string}>} competenciasInfo
+ * @param {number} colStart - Primera columna de competencias
+ * @param {number} numAlumnos
+ */
+function medias_applyCompetenciaColors(sheet, competenciasInfo, colStart, numAlumnos) {
+  if (!sheet || !competenciasInfo || competenciasInfo.length === 0) return;
+  
+  for (let i = 0; i < competenciasInfo.length; i++) {
+    const comp = competenciasInfo[i];
+    const col = colStart + i;
+    const color = comp.color || "#ffffff";
+    
+    // Colorear header
+    applyBackgroundColor(sheet, 1, col, 1, 1, color);
+    
+    // Colorear datos
+    if (numAlumnos > 0) {
+      applyBackgroundColor(sheet, 2, col, numAlumnos, 1, color);
+    }
+  }
+}
+
+/**
+ * Aplica borde vertical (separador) entre la última columna de criterios y la primera de competencias.
+ * @param {Sheet} sheet
+ * @param {number} colLastCriterio - Columna del último criterio
+ * @param {number} numAlumnos
+ */
+function medias_applySeparatorBorder(sheet, colLastCriterio, numAlumnos) {
+  if (!sheet || colLastCriterio < 1) return;
+  
+  try {
+    // Aplicar borde derecho grueso a la columna del último criterio
+    const numRows = 1 + numAlumnos; // header + alumnos
+    const range = sheet.getRange(1, colLastCriterio, numRows, 1);
+    range.setBorder(null, null, null, true, null, null, "#000000", SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+  } catch(e) {
+    Logger.log('medias_applySeparatorBorder: ' + e);
   }
 }

@@ -77,16 +77,26 @@ function runAllTests() {
     totalFailed++;
   }
   
-  // Tests de integración
+  // Tests de integración (solo Phase1, las demás son manuales)
   Logger.log('\n⚠️⚠️⚠️ INICIANDO TESTS DE INTEGRACIÓN ⚠️⚠️⚠️');
   Logger.log('⚠️ Estos tests MODIFICAN la hoja de cálculo');
   Logger.log('⚠️ Asegúrate de estar en una hoja de PRUEBA\n');
   
   try {
-    runIntegrationTests();
-    allResults.push('✓ Tests de Integración');
+    runIntegrationTest_Phase1();
+    allResults.push('✓ Tests de Integración - Phase1 (instrucciones mostradas)');
+    
+    Logger.log('\n====================================');
+    Logger.log('📋 TESTS DE INTEGRACIÓN - FASES 2 Y 3');
+    Logger.log('====================================');
+    Logger.log('Los tests de integración requieren interacción manual.');
+    Logger.log('Phase1 completada. Para continuar:');
+    Logger.log('  1. Lee las instrucciones mostradas arriba');
+    Logger.log('  2. Ejecuta manualmente: runIntegrationTest_Phase2()');
+    Logger.log('  3. Sigue las instrucciones de Phase2');
+    Logger.log('  4. Ejecuta manualmente: runIntegrationTest_Phase3()\n');
   } catch (e) {
-    allResults.push('✗ Tests de Integración: ' + e.message);
+    allResults.push('✗ Tests de Integración - Phase1: ' + e.message);
     totalFailed++;
   }
   
