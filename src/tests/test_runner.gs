@@ -21,7 +21,8 @@ function runAllUnitTests() {
     { name: 'Utils Tests', fn: runUtilsTests },
     { name: 'Main Tests', fn: runMainTests },
     { name: 'Calificaciones Tests', fn: runCalificacionesTests },
-    { name: 'Medias Tests', fn: runMediasTests }
+    { name: 'Medias Tests', fn: runMediasTests },
+    { name: 'Observaciones Tests', fn: runObservacionesTests }
   ];
   
   let totalPassed = 0;

@@ -97,11 +97,13 @@ function runIntegrationTest_Phase2() {
   
   const sheetCalif = ss.getSheetByName('calificaciones1');
   const sheetMedias = ss.getSheetByName('medias1');
+  const sheetObservaciones = ss.getSheetByName('observaciones1');
   
   if (!sheetCalif) throw new Error('No se creó calificaciones1');
   if (!sheetMedias) throw new Error('No se creó medias1');
+  if (!sheetObservaciones) throw new Error('No se creó observaciones1');
   
-  Logger.log('✓ Hojas calificaciones1 y medias1 creadas\n');
+  Logger.log('✓ Hojas calificaciones1, medias1 y observaciones1 creadas\n');
   
   // Verificar estructura esperada de calificaciones1
   verifyCalificacionesStructure(sheetCalif, {
@@ -118,7 +120,34 @@ function runIntegrationTest_Phase2() {
     competencias: competenciasInfo
   });
   
-  Logger.log('✓ Estructura de calificaciones1 y medias1 verificada\n');
+  // Verificar estructura de observaciones1
+  verifyObservacionesStructure(sheetObservaciones, {
+    alumnos: ['Juan Fernández', 'Ana García', 'Pedro Martínez', 'María Sánchez']
+  });
+  
+  Logger.log('✓ Estructura de calificaciones1, medias1 y observaciones1 verificada\n');
+  
+  // Verificar enlaces en instrumentos
+  const sheetInstr = ss.getSheetByName('instrumentos');
+  if (!sheetInstr) {
+    throw new Error('No se encontró hoja instrumentos');
+  }
+  
+  const linkCalif = sheetInstr.getRange('K3').getFormula();
+  const linkObservaciones = sheetInstr.getRange('K4').getFormula();
+  const linkMedias = sheetInstr.getRange('K5').getFormula();
+  
+  if (!linkCalif.includes('HYPERLINK') || !linkCalif.includes('calificaciones1')) {
+    throw new Error('Enlace a calificaciones1 no encontrado en K3');
+  }
+  if (!linkObservaciones.includes('HYPERLINK') || !linkObservaciones.includes('observaciones1')) {
+    throw new Error('Enlace a observaciones1 no encontrado en K4');
+  }
+  if (!linkMedias.includes('HYPERLINK') || !linkMedias.includes('medias1')) {
+    throw new Error('Enlace a medias1 no encontrado en K5');
+  }
+  
+  Logger.log('✓ Enlaces en instrumentos verificados (K3: calificaciones1, K4: observaciones1, K5: medias1)\n');
   
   // Verificar fórmulas de Media Final (debe ser por competencias por defecto)
   verifyMediaFinalFormulas(sheetMedias, 'competencias');
@@ -140,12 +169,16 @@ Por favor, realiza las siguientes acciones EXACTAMENTE:
 👥 EN "listado":
 6. AÑADIR en fila 6: Luis | Álvarez | Moreno
 
+📋 EN "observaciones1":
+7. AÑADIR datos de prueba (ejemplo: Celda B2 = 2, Celda I3 = "Alumno muy participativo")
+   (Esto verificará que los datos se preservan al regenerar)
+
 📝 EN "instrumentos" (columnas Trimestre1 y Criterios1):
-7. AÑADIR en fila 6 al FINAL: "Prueba Final" | "1.1 - Criterio Uno, 1.2 - Criterio Dos, 2.2 - Criterio Cuatro"
-8. INTERCAMBIAR filas 2 y 3 (Examen T1 ↔ Trabajo Escrito)
-9. MODIFICAR fila 5 (Presentación después del intercambio): AÑADIR "2.2 - Criterio Cuatro" → "1.1 - Criterio Uno, 2.1 - Criterio Tres, 2.2 - Criterio Cuatro"
-10. MODIFICAR fila 2 (ahora Trabajo Escrito): cambiar a → "1.2 - Criterio Dos"
-11. INSERTAR en fila 4 (entre Trabajo Escrito y Presentación): "Ejercicios" | "2.1 - Criterio Tres, 2.2 - Criterio Cuatro"
+8. AÑADIR en fila 6 al FINAL: "Prueba Final" | "1.1 - Criterio Uno, 1.2 - Criterio Dos, 2.2 - Criterio Cuatro"
+9. INTERCAMBIAR filas 2 y 3 (Examen T1 ↔ Trabajo Escrito)
+10. MODIFICAR fila 5 (Presentación después del intercambio): AÑADIR "2.2 - Criterio Cuatro" → "1.1 - Criterio Uno, 2.1 - Criterio Tres, 2.2 - Criterio Cuatro"
+11. MODIFICAR fila 2 (ahora Trabajo Escrito): cambiar a → "1.2 - Criterio Dos"
+12. INSERTAR en fila 4 (entre Trabajo Escrito y Presentación): "Ejercicios" | "2.1 - Criterio Tres, 2.2 - Criterio Cuatro"
 
 RESULTADO FINAL ESPERADO EN "instrumentos" (columnas Trimestre1 y Criterios1):
 Fila 2: Trabajo Escrito | 1.2 - Criterio Dos
@@ -255,12 +288,13 @@ function runIntegrationTest_Phase3() {
   
   Logger.log('✓ Trimestre1 regenerado\n');
   
-  // Volver a obtener referencias (las hojas fueron recreadas)
+  // Volver a obtener referencias (las hojas fueron recreadas excepto observaciones1)
   const sheetCalifNew = ss.getSheetByName('calificaciones1');
   const sheetMediasNew = ss.getSheetByName('medias1');
+  const sheetObservacionesNew = ss.getSheetByName('observaciones1');
   
-  if (!sheetCalifNew || !sheetMediasNew) {
-    throw new Error('❌ Error al regenerar: no se encontraron las hojas calificaciones1 o medias1');
+  if (!sheetCalifNew || !sheetMediasNew || !sheetObservacionesNew) {
+    throw new Error('❌ Error al regenerar: no se encontraron las hojas calificaciones1, medias1 u observaciones1');
   }
   
   // Verificar nueva estructura
@@ -297,6 +331,25 @@ function runIntegrationTest_Phase3() {
   });
   
   Logger.log('✓ Estructura de medias1 verificada\n');
+  
+  // Verificar estructura de observaciones1 (debe tener nuevo alumno y preservar datos)
+  verifyObservacionesStructure(sheetObservacionesNew, {
+    alumnos: ['Luis Álvarez', 'Juan Fernández', 'Ana García', 'Pedro Martínez', 'María Sánchez']
+  });
+  
+  Logger.log('✓ Estructura de observaciones1 verificada (alumno nuevo agregado)\n');
+  
+  // Verificar que enlaces siguen correctos después de regenerar
+  const sheetInstrNew = ss.getSheetByName('instrumentos');
+  const linkCalifNew = sheetInstrNew.getRange('K3').getFormula();
+  const linkObservacionesNew = sheetInstrNew.getRange('K4').getFormula();
+  const linkMediasNew = sheetInstrNew.getRange('K5').getFormula();
+  
+  if (!linkCalifNew.includes('calificaciones1') || !linkObservacionesNew.includes('observaciones1') || !linkMediasNew.includes('medias1')) {
+    throw new Error('Enlaces en instrumentos no actualizados correctamente después de regenerar');
+  }
+  
+  Logger.log('✓ Enlaces en instrumentos verificados después de regenerar\n');
   Logger.log('\n' + '='.repeat(60));
   Logger.log('✓✓✓ TEST DE INTEGRACIÓN COMPLETO ✓✓✓');
   Logger.log('='.repeat(60));
@@ -554,4 +607,65 @@ function verifyMediaFinalFormulas(sheet, tipo) {
       }
     }
   }
+}
+
+/**
+ * Verifica que la estructura de observaciones1 es la esperada.
+ * @param {Sheet} sheet - Hoja observaciones
+ * @param {Object} expected - {alumnos: Array<string>}
+ */
+function verifyObservacionesStructure(sheet, expected) {
+  const headerRow = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const numAlumnos = sheet.getLastRow() - 1;
+  
+  // Verificar número de alumnos
+  if (numAlumnos !== expected.alumnos.length) {
+    throw new Error(`Esperaba ${expected.alumnos.length} alumnos en observaciones, encontró ${numAlumnos}`);
+  }
+  
+  // Verificar alumnos en orden alfabético
+  const alumnosActuales = sheet.getRange(2, 1, numAlumnos, 1).getValues().map(r => r[0]);
+  for (let i = 0; i < expected.alumnos.length; i++) {
+    if (alumnosActuales[i] !== expected.alumnos[i]) {
+      throw new Error(`Alumno en observaciones fila ${i + 2}: esperaba "${expected.alumnos[i]}", encontró "${alumnosActuales[i]}"`);
+    }
+  }
+  
+  // Verificar headers
+  const expectedHeaders = observaciones_getHeaders();
+  if (headerRow.length < expectedHeaders.length) {
+    throw new Error(`Esperaba ${expectedHeaders.length} columnas en observaciones, encontró ${headerRow.length}`);
+  }
+  
+  for (let i = 0; i < expectedHeaders.length; i++) {
+    if (headerRow[i] !== expectedHeaders[i]) {
+      throw new Error(`Header columna ${i + 1}: esperaba "${expectedHeaders[i]}", encontró "${headerRow[i]}"`);
+    }
+  }
+  
+  // Verificar bordes en el rango de datos
+  const dataRange = sheet.getRange(1, 1, numAlumnos + 1, expectedHeaders.length);
+  const borders = dataRange.getBorder();
+  if (!borders || !borders.getTop()) {
+    throw new Error('Falta cuadrícula (bordes) en el rango de datos de observaciones');
+  }
+  
+  // Verificar alineación a la izquierda en headers
+  const headerRange = sheet.getRange(1, 1, 1, expectedHeaders.length);
+  const headerAlignment = headerRange.getHorizontalAlignment();
+  if (headerAlignment !== 'left') {
+    throw new Error(`Alineación de headers esperada 'left', encontrada '${headerAlignment}'`);
+  }
+  
+  // Verificar alineación a la izquierda en columna Observaciones adicionales (columna 9)
+  if (numAlumnos > 0) {
+    const observacionesColRange = sheet.getRange(2, 9, numAlumnos, 1);
+    const obsAlignment = observacionesColRange.getHorizontalAlignment();
+    if (obsAlignment !== 'left') {
+      throw new Error(`Alineación de columna Observaciones adicionales esperada 'left', encontrada '${obsAlignment}'`);
+    }
+  }
+  
+  Logger.log(`  ✓ Estructura de observaciones verificada: ${numAlumnos} alumnos, ${expectedHeaders.length} columnas`);
+  Logger.log(`  ✓ Formato verificado: bordes y alineación correctos`);
 }

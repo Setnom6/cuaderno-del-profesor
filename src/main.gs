@@ -18,7 +18,7 @@ function buildCalificaciones(n, alumnos, instrumentos, claveToColor) {
 
 /**
  * Wrapper público de buildMedias que delega en la implementación modular.
- * @param {number} n - Número de trimestre
+ * @param {number} n - Número del trimestre
  * @param {Sheet} sheetCalif - Hoja calificacionesN
  * @param {Array<Array<string>>} alumnos
  * @param {Sheet} sheetCriteria - Hoja "criterios"
@@ -27,6 +27,16 @@ function buildCalificaciones(n, alumnos, instrumentos, claveToColor) {
  */
 function buildMedias(n, sheetCalif, alumnos, sheetCriteria, claveToColor) {
   return buildMediasImpl(n, sheetCalif, alumnos, sheetCriteria, claveToColor);
+}
+
+/**
+ * Wrapper público de buildObservaciones que delega en la implementación modular.
+ * @param {number} n - Número del trimestre
+ * @param {Array<Array<string>>} alumnos
+ * @returns {Sheet} La hoja observacionesN (existente o creada)
+ */
+function buildObservaciones(n, alumnos) {
+  return buildObservacionesImpl(n, alumnos);
 }
 
 function generateTrimester(n, showAlert = true) {
@@ -81,11 +91,14 @@ function generateTrimester(n, showAlert = true) {
   // ---------- Call medias constructor (build mediasN). It will compute columns for each clave  ----------
   sheetMedias = buildMedias(n, calificacionesResult.sheetCalif, alumnos, sheetCriteria, claveToColor);
 
+  // ---------- Call observaciones constructor (build observacionesN if not exists) ----------
+  const sheetObservaciones = buildObservaciones(n, alumnos);
+
   // ------------------ Call to get links --------------
-  writeLinks(n, calificacionesResult.sheetCalif, sheetMedias);
+  writeLinks(n, calificacionesResult.sheetCalif, sheetMedias, sheetObservaciones);
 
   if (showAlert) {
-    SpreadsheetApp.getUi().alert("Calificaciones y medias para Trimestre " + n + " generadas/actualizadas correctamente.");
+    SpreadsheetApp.getUi().alert("Calificaciones, medias y observaciones para Trimestre " + n + " generadas/actualizadas correctamente.");
   }
 }
 
@@ -242,7 +255,7 @@ function arraysEqual(a,b) {
 }
 
 // ===== ENLACES EN HOJA INSTRUMENTOS =====
-function writeLinks(n, sheetCalif, sheetMedias) {
+function writeLinks(n, sheetCalif, sheetMedias, sheetObservaciones) {
 
   const ss = SpreadsheetApp.getActive();
   const sheetInstr = ss.getSheetByName("instrumentos");
@@ -250,12 +263,13 @@ function writeLinks(n, sheetCalif, sheetMedias) {
 
   const califGid = sheetCalif.getSheetId();
   const mediasGid = sheetMedias.getSheetId();
+  const observacionesGid = sheetObservaciones ? sheetObservaciones.getSheetId() : null;
 
   // mapa de posiciones
   const posiciones = {
-    1: { calif: "K3",  medias: "K5"  },
-    2: { calif: "K10", medias: "K12" },
-    3: { calif: "K17", medias: "K19" }
+    1: { calif: "K3",  observaciones: "K4", medias: "K5"  },
+    2: { calif: "K10", observaciones: "K11", medias: "K12" },
+    3: { calif: "K17", observaciones: "K18", medias: "K19" }
   };
 
   if (!posiciones[n]) return;
@@ -263,6 +277,11 @@ function writeLinks(n, sheetCalif, sheetMedias) {
   // hipervínculos internos usando el gid
   sheetInstr.getRange(posiciones[n].calif)
     .setFormula(`=HYPERLINK("#gid=${califGid}"; "calificaciones${n}")`);
+  
+  if (observacionesGid) {
+    sheetInstr.getRange(posiciones[n].observaciones)
+      .setFormula(`=HYPERLINK("#gid=${observacionesGid}"; "observaciones${n}")`);
+  }
 
   sheetInstr.getRange(posiciones[n].medias)
     .setFormula(`=HYPERLINK("#gid=${mediasGid}"; "medias${n}")`);
