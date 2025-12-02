@@ -18,17 +18,138 @@ Para una correcta instalación y ejemplos de uso, vaya al ```Tutorial.pdf``` que
 
 ## Estructura del repositorio
 
-- `README.md` — Documentación (este archivo).
-- `LICENSE` — Licencia del proyecto.
-- `src/` — Código fuente del proyecto (archivos de Apps Script):
-	- `calificacionesConstructor.gs` — Lógica para construir las calificaciones por alumno/criterio.
-	- `formatter.gs` — Funciones de formato y utilidades para la hoja de cálculo.
-	- `main.gs` — Entradas principales y funciones de orquestación.
-	- `mediasConstructor.gs` — Cálculo de medias y promedios por trimestre y materia.
+```
+appsscript.json        # Configuración del proyecto Apps Script
+LICENSE                # Licencia del proyecto
+README.md              # Este archivo
+src/
+  # === Punto de entrada ===
+  main.gs                        # API pública (trimester1/2/3, wrappers buildCalificaciones/buildMedias)
+  utils.gs                       # Funciones generales reutilizables (formato, normalización)
+  
+  # === Sistema de calificaciones (arquitectura modular) ===
+  calificaciones_impl.gs         # Orquestador: coordina data + format
+  calificaciones_data.gs         # Manejo de datos (headers, fórmulas, validaciones)
+  calificaciones_format.gs       # Formato específico (merges, colores, anchos, bordes)
+  
+  # === Sistema de medias (arquitectura modular - mirror) ===
+  medias_impl.gs                 # Orquestador: coordina data + format
+  medias_data.gs                 # Manejo de datos (lectura criterios, fórmulas de media)
+  medias_format.gs               # Formato específico (colores, anchos, formato condicional)
+  
+  # === Tests (estructura mirror) ===
+  tests/
+    test_runner.gs                     # Suite maestra: ejecuta todos los tests
+    integration_test.gs                # Tests de integración con casos edge
+    
+    # Tests unitarios (uno por módulo principal)
+    main_test.gs                       # Tests para main.gs
+    utils_test.gs                      # Tests para utils.gs
+    calificaciones_test.gs             # Tests legacy para calificaciones
+    calificaciones_impl_test.gs        # Tests para calificaciones_impl.gs
+    calificaciones_data_test.gs        # Tests para calificaciones_data.gs
+    calificaciones_format_test.gs      # Tests para calificaciones_format.gs
+    medias_impl_test.gs                # Tests para medias_impl.gs
+    medias_data_test.gs                # Tests para medias_data.gs
+    medias_format_test.gs              # Tests para medias_format.gs
+```
 
-Nota sobre la plantilla de Drive
+### Arquitectura
 
-La `plantillaInicial` disponible en el Drive del repositorio ya contiene un proyecto de Google Apps Script con el código fuente operativo. El código que aparece en esa plantilla también se incluye en la carpeta `src/` de este repositorio por completitud y para facilitar su edición y auditoría local. Puedes usar directamente la plantilla en Drive para comenzar, o bien importar/pegar los archivos de `src/` en tu propio proyecto de Apps Script si prefieres trabajar desde el editor web.
+**Separación de responsabilidades:**
+- **utils.gs**: Funciones agnósticas de datos (formato general, normalización, helpers)
+- **{module}_impl.gs**: Orquestadores que coordinan data + format en 5 fases claramente definidas
+- **{module}_data.gs**: Lógica de datos (lectura, mapeo, construcción de fórmulas)
+- **{module}_format.gs**: Lógica de apariencia (colores, bordes, anchos, formato condicional)
+
+**Convención de nombres:**
+- Funciones generales (utils.gs): sin prefijo, reutilizables en todo el proyecto
+- Funciones específicas: prefijadas por módulo (`calif_*`, `medias_*`)
+
+**Testing:**
+- Estructura mirror: cada archivo de src/ tiene su correspondiente test
+- Tests de integración cubren casos edge (alumnos vacíos, duplicados, sin criterios, etc.)
+- Suite maestra `runAllTests()` ejecuta todos los tests en secuencia
+
+**Nota:** La plantilla inicial del Drive ya contiene un proyecto de Apps Script con este código fuente; el código se incluye aquí localmente por completitud y para facilitar el control de versiones.
+
+## Arquitectura modular
+
+El proyecto sigue una arquitectura de **separación de responsabilidades** dividida en capas:
+
+### 1. Capa de datos (`calificaciones_data.gs`)
+- **Responsabilidad:** Lectura, mapeo y copia de datos antiguos
+- **Funciones principales:**
+  - `readOldSheetData()` - Lee datos de hoja existente
+  - `buildOldDataBlocks()` - Construye estructura de bloques por instrumento
+  - `copyOldDataToTemp()` - Copia datos preservando criterios coincidentes
+
+### 2. Capa de utilidades (`utils.gs`)
+- **Responsabilidad:** Funciones puras reutilizables sin efectos laterales
+- **Funciones principales:**
+  - `buildCalifHeaders()` - Construcción de headers de calificaciones
+  - `deduplicateRowsInMemory()` - Deduplicación robusta con firma normalizada
+  - `ensureSheetDimensions()` - Manejo de dimensiones de hoja
+  - `deleteExcessRows()` - Limpieza de filas sobrantes
+  - `columnToLetter()`, `normalizeString()`, `makeRowSignatureNormalized()` - Helpers
+
+### 3. Capa de formateo (`formatter.gs`)
+- **Responsabilidad:** Todo lo relacionado con apariencia y formato visual
+- **Funciones principales:**
+  - `formatter_applyHeaderMerges()` - Fusiones de celdas
+  - `formatter_applyAverageFormulas()` - Fórmulas de media
+  - `formatter_applyDataValidation()` - Validaciones y formato condicional
+  - `formatter_applyColumnWidths()` - Anchos de columna
+  - `formatter_applyVerticalInstrumentBorders()` - Bordes visuales
+  - `formatter_applyNumberFormat()` - Formato numérico
+
+### 4. Capa de orquestación (`calificaciones_impl.gs`)
+- **Responsabilidad:** Coordinar el flujo completo sin lógica de negocio
+- **Flujo en dos fases:**
+  1. **Fase de datos:** Preparar → Construir temporal → Copiar antiguos → Deduplicar → Escribir
+  2. **Fase de formato:** Merges → Colores → Fórmulas → Validaciones → Anchos → Bordes
+
+### 5. API pública (`calificacionesConstructor.gs`, `main.gs`)
+- **Responsabilidad:** Mantener contratos públicos estables
+- `buildCalificaciones()` - Wrapper que delega a `buildCalificacionesImpl()`
+- `trimester1()`, `trimester2()`, `trimester3()` - Funciones de entrada
+
+## Tests
+
+El proyecto incluye una suite completa de tests unitarios y de integración.
+
+**📖 Para información detallada sobre estructura, ejecución y requisitos de tests, consulta [TESTS.md](TESTS.md)**
+
+### ⚠️ ADVERTENCIA IMPORTANTE
+
+Los tests de integración **MODIFICAN EL SPREADSHEET**. Ejecuta estos tests **SOLO** en una hoja separada de prueba, nunca en tu hoja de producción con datos reales.
+
+### Ejecutar tests rápidamente:
+
+```javascript
+// Solo tests unitarios (seguros)
+runAllUnitTests()
+
+// Tests de integración interactivos (⚠️ modifican spreadsheet)
+runIntegrationTest_Phase1()  // Lee instrucciones primero
+runIntegrationTest_Phase2()  // Tras completar Phase1
+runIntegrationTest_Phase3()  // Tras completar Phase2
+
+// Todos los tests
+runAllTests()
+```
+
+## Verificación tras refactorización
+
+Después de cualquier cambio importante:
+
+1. **Ejecutar tests:** `runAllTests()` en el editor
+2. **Ejecutar generación manual:** `trimester1()` (o el trimestre correspondiente)
+3. **Verificar hoja generada:**
+   - Ordenación correcta de alumnos (primer apellido, segundo apellido como desempate)
+   - No hay filas duplicadas
+   - Datos antiguos preservados correctamente
+   - Formato, colores, fórmulas aplicados correctamente
 
 ## Créditos
 Creado por José Manuel Montes Armenteros.  

@@ -1,17 +1,44 @@
 /**
  * main.gs
  * Punto de entrada: genera/actualiza calificacionesN y mediasN para un trimestre.
- * Llama a calificacionesConstructor.buildCalificaciones y madieasConstructor.buildMedias.
+ * Contiene las funciones públicas principales y wrappers.
  */
 
-function generateTrimester(n) {
+/**
+ * Wrapper público de buildCalificaciones que delega en la implementación modular.
+ * @param {number} n - Número de trimestre
+ * @param {Array<Array<string>>} alumnos
+ * @param {Array<{nombre: string, criterios: Array<string>}>} instrumentos
+ * @param {Object<string, string>} claveToColor
+ * @returns {{sheetCalif: Sheet, alumnos: Array<Array<string>>}}
+ */
+function buildCalificaciones(n, alumnos, instrumentos, claveToColor) {
+  return buildCalificacionesImpl(n, alumnos, instrumentos, claveToColor);
+}
+
+/**
+ * Wrapper público de buildMedias que delega en la implementación modular.
+ * @param {number} n - Número de trimestre
+ * @param {Sheet} sheetCalif - Hoja calificacionesN
+ * @param {Array<Array<string>>} alumnos
+ * @param {Sheet} sheetCriteria - Hoja "criterios"
+ * @param {Object<string, string>} claveToColor
+ * @returns {Sheet} La hoja mediasN creada
+ */
+function buildMedias(n, sheetCalif, alumnos, sheetCriteria, claveToColor) {
+  return buildMediasImpl(n, sheetCalif, alumnos, sheetCriteria, claveToColor);
+}
+
+function generateTrimester(n, showAlert = true) {
   const ss = SpreadsheetApp.getActive();
   const sheetList = ss.getSheetByName("listado");
   const sheetCriteria = ss.getSheetByName("criterios");
   const sheetInstruments = ss.getSheetByName("instrumentos");
 
   if (!sheetList || !sheetCriteria || !sheetInstruments) {
-    SpreadsheetApp.getUi().alert("Faltan hojas necesarias: 'listado', 'criterios' o 'instrumentos'.");
+    if (showAlert) {
+      SpreadsheetApp.getUi().alert("Faltan hojas necesarias: 'listado', 'criterios' o 'instrumentos'.");
+    }
     return;
   }
 
@@ -21,103 +48,160 @@ function generateTrimester(n) {
   const colCriteriosIdx = hdrInst.indexOf("Criterios" + n);
 
   if (colTrimestreIdx === -1 || colCriteriosIdx === -1) {
-    SpreadsheetApp.getUi().alert("No se han encontrado las cabeceras 'Trimestre" + n + "' o 'Criterios" + n + "' en la hoja 'instrumentos'.");
+    if (showAlert) {
+      SpreadsheetApp.getUi().alert("No se han encontrado las cabeceras 'Trimestre" + n + "' o 'Criterios" + n + "' en la hoja 'instrumentos'.");
+    }
     return;
   }
 
   const trimestreCol = colTrimestreIdx + 1;
   const criteriosCol = colCriteriosIdx + 1;
 
-  // ---------- build student list ordered by surname (apellidos) ----------
-  // Se lee hasta 3 columnas por si el listado tiene Nombre, Apellido1, Apellido2.
-  const listadoLastRow = Math.max( sheetList.getLastRow(), 2 );
-  const datosListado = sheetList.getRange(2,1, Math.max(0, listadoLastRow-1), 3).getValues();
-  const alumnosRaw = datosListado
+  // ---------- Construir listado de alumnos a partir de la hoja 'listado' ----------
+  const datosListado = readListadoRows(sheetList);
+  const alumnosResult = buildAlumnosFromRows(datosListado);
+  const alumnos = alumnosResult.alumnos; // array de [displayName]
+
+  // ---------- Obtener instrumentos y criterios ----------
+  const instrumentos = buildInstrumentosFromSheet(sheetInstruments, trimestreCol, criteriosCol);
+
+  // ---------- build mapping clave->color from 'criterios' sheet (same logic as original) ----------
+  const claveToColor = buildClaveToColorMap(sheetCriteria);
+
+  // ---------- Call calificaciones constructor (build or update sheet calificacionesN) ----------
+  const calificacionesResult = buildCalificaciones(n, alumnos, instrumentos, claveToColor);
+
+  if (!calificacionesResult || !calificacionesResult.sheetCalif) {
+    if (showAlert) {
+      SpreadsheetApp.getUi().alert("Error construyendo/actualizando calificaciones" + n);
+    }
+    return;
+  }
+
+  // ---------- Call medias constructor (build mediasN). It will compute columns for each clave  ----------
+  sheetMedias = buildMedias(n, calificacionesResult.sheetCalif, alumnos, sheetCriteria, claveToColor);
+
+  // ------------------ Call to get links --------------
+  writeLinks(n, calificacionesResult.sheetCalif, sheetMedias);
+
+  if (showAlert) {
+    SpreadsheetApp.getUi().alert("Calificaciones y medias para Trimestre " + n + " generadas/actualizadas correctamente.");
+  }
+}
+
+/* helpers and exposed functions */
+
+function trimester1(){ generateTrimester(1); }
+function trimester2(){ generateTrimester(2); }
+function trimester3(){ generateTrimester(3); }
+
+/**
+ * Obtener filas del listado (columnas A..C) a partir de la hoja `listado`.
+ * Devuelve un array bidimensional con las filas leídas (sin cabecera).
+ * @param {Sheet} sheetList
+ * @returns {Array<Array<any>>}
+ */
+function readListadoRows(sheetList) {
+  if (!sheetList) return [];
+  const listadoLastRow = Math.max(sheetList.getLastRow(), 2);
+  const numRows = Math.max(0, listadoLastRow - 1);
+  if (numRows <= 0) return [];
+  return sheetList.getRange(2, 1, numRows, 3).getValues();
+}
+
+/**
+ * Construye la lista de alumnos (displayName) a partir de las filas del listado.
+ * Mantiene la lógica existente: displayName = nombre + ' ' + primer apellido;
+ * usa surnameKey (apellido1 + apellido2) para ordenar y conserva homónimos si las filas difieren.
+ * @param {Array<Array<any>>} datosListado
+ * @returns {{alumnos: Array<Array<string>>, uniqueAlumnosRaw: Array<Object>}}
+ */
+function buildAlumnosFromRows(datosListado) {
+  const alumnosRaw = (datosListado || [])
     .filter(r => r[0] && r[1])
     .map(r => {
-      const nombres = (r[0] || "").toString().trim();
-      const apellido1 = (r[1] || "").toString().trim();
-      const apellido2 = (r[2] || "").toString().trim();
-      // displayName: solo nombre + primer apellido (para mostrar y para emparejar con datos antiguos)
-      const displayName = (nombres + " " + apellido1).trim();
-      // surnameKey: usado solo para ordenar (apellido1 + apellido2 si existe)
-      const surnameKey = (apellido1 + (apellido2 ? " " + apellido2 : "")).trim();
-      // sourceRow: guardamos la fila original (columnas A..C leídas) para comparar igualdad completa
-      const sourceRow = [ (r[0] || "").toString().trim(), (r[1] || "").toString().trim(), (r[2] || "").toString().trim() ];
+      const nombres = normalizeString(r[0]);
+      const apellido1 = normalizeString(r[1]);
+      const apellido2 = normalizeString(r[2]);
+      const displayName = (nombres + ' ' + apellido1).trim();
+      const surnameKey = (apellido1 + (apellido2 ? ' ' + apellido2 : '')).trim();
+      const sourceRow = [nombres, apellido1, apellido2];
       return { displayName, surnameKey, nombres, sourceRow };
     });
 
-  // Ordenar por apellidos (clave), usando locale 'es' y desempatar por nombre para estabilidad
+  // Ordenar por surnameKey y desempatar por nombres
   alumnosRaw.sort((a, b) => {
-    const cmp = a.surnameKey.localeCompare(b.surnameKey, 'es', { sensitivity: 'base', numeric: true });
+    const cmp = localeCompareEs(a.surnameKey, b.surnameKey);
     if (cmp !== 0) return cmp;
-    return a.nombres.localeCompare(b.nombres, 'es', { sensitivity: 'base', numeric: true });
+    return localeCompareEs(a.nombres, b.nombres);
   });
 
-  // Eliminar duplicados por displayName SOLO si toda la fila original (A..C) es idéntica.
-  // Si hay dos entradas con mismo displayName pero datos distintos, conservamos ambas y lo dejamos al usuario.
-  const seenMap = {}; // displayName -> [sourceRowString, ...]
+  // Deduplicación segura: solo eliminar entradas si la fila A..C es idéntica.
+  const seenMap = {}; // displayName -> [rowSig,...]
   const uniqueAlumnosRaw = [];
   alumnosRaw.forEach(a => {
-    const nameKey = a.displayName || "";
-    const rowSig = (a.sourceRow || []).join("|");
+    const nameKey = a.displayName || '';
+    const rowSig = makeRowSignature(a.sourceRow);
     if (!seenMap[nameKey]) {
       seenMap[nameKey] = [rowSig];
       uniqueAlumnosRaw.push(a);
     } else {
-      // ya existe al menos una fila con ese displayName: comprobar si alguna coincide exactamente
       const matches = seenMap[nameKey].some(sig => sig === rowSig);
       if (!matches) {
-        // distinto contenido: conservarlo (posible homónimo)
         seenMap[nameKey].push(rowSig);
         uniqueAlumnosRaw.push(a);
-        Logger.log(`Homónimo detectado para '${nameKey}' con distinto contenido; se conservan ambas filas.`);
+        Logger.log("Homónimo detectado para '" + nameKey + "' con distinto contenido; se conservan ambas filas.");
       } else {
-        // fila idéntica ya existente: ignoramos esta entrada (duplicado exacto)
-        Logger.log(`Duplicado exacto detectado para '${nameKey}' — una de las filas idénticas será ignorada.`);
+        Logger.log("Duplicado exacto detectado para '" + nameKey + "' — una de las filas idénticas será ignorada.");
       }
     }
   });
 
-  const alumnos = uniqueAlumnosRaw.map(a => [a.displayName]); // para setValues (solo nombre + primer apellido)
+  const alumnos = uniqueAlumnosRaw.map(a => [a.displayName]);
+  return { alumnos, uniqueAlumnosRaw };
+}
 
-  // ---------- get instruments and their criteria (SORTED LEXICOGRAPHICALLY) ----------
-  const instLastRow = Math.max( sheetInstruments.getLastRow(), 2 );
+/**
+ * Extrae instrumentos y sus criterios desde la hoja `instrumentos` para un trimestre dado.
+ * Ordena lexicográficamente las claves de criterios (locale 'es').
+ * @param {Sheet} sheetInstruments
+ * @param {number} trimestreCol - índice 1-based
+ * @param {number} criteriosCol - índice 1-based
+ * @returns {Array<Object>} - [{ nombre, criterios: [...] }, ...]
+ */
+function buildInstrumentosFromSheet(sheetInstruments, trimestreCol, criteriosCol) {
+  if (!sheetInstruments) return [];
+  const instLastRow = Math.max(sheetInstruments.getLastRow(), 2);
   const instNames = instLastRow - 1 > 0 ? sheetInstruments.getRange(2, trimestreCol, Math.max(0, instLastRow-1)).getValues().map(r=>r[0]) : [];
   const instCriteria = instLastRow - 1 > 0 ? sheetInstruments.getRange(2, criteriosCol, Math.max(0, instLastRow-1)).getValues().map(r=>r[0]) : [];
 
-  let instrumentos = [];
-  for (let i=0; i<instNames.length; i++){
+  const instrumentos = [];
+  for (let i = 0; i < instNames.length; i++) {
     const name = instNames[i];
     if (name && name.toString().trim() !== "") {
       const criteriosCell = (instCriteria[i] || "").toString();
-      
-      // Clean and split criteria
-      let criteriosList = criteriosCell === "" ? [] : criteriosCell.split(",").map(s=>s.trim()).filter(s=>s!=="");
-      
-      // SORT CRITERIA LEXICOGRAPHICALLY with numeric awareness
+      let criteriosList = criteriosCell === "" ? [] : criteriosCell.split(",").map(s=>s.trim()).filter(s=>s!="");
       if (criteriosList.length > 0) {
-        criteriosList.sort((a, b) => {
-          return a.localeCompare(b, 'es', { 
-            numeric: true, 
-            sensitivity: 'base'
-          });
-        });
-        
-        // DEBUG: Log the sorting result
+        criteriosList.sort((a, b) => localeCompareEs(a, b));
         Logger.log(`Instrument: ${name}`);
         Logger.log(`Original: ${criteriosCell}`);
         Logger.log(`Sorted: ${criteriosList.join(', ')}`);
       }
-      
       if (criteriosList.length > 0) {
         instrumentos.push({ nombre: name.toString().trim(), criterios: criteriosList });
       }
-
     }
   }
+  return instrumentos;
+}
 
-  // ---------- build mapping clave->color from 'criterios' sheet (same logic as original) ----------
+/**
+ * Construye un mapa clave->color desde la hoja `criterios`.
+ * Mantiene la lógica de búsqueda de columna "clave" y el fallback a columna D.
+ * @param {Sheet} sheetCriteria
+ * @returns {Object} clave->color
+ */
+function buildClaveToColorMap(sheetCriteria) {
   const criteriosHdr = sheetCriteria.getRange(1,1,1,sheetCriteria.getLastColumn()).getValues()[0].map(h => h ? h.toString().trim().toLowerCase() : "");
   const colClaveIdx = criteriosHdr.indexOf("clave"); // 0-based
   let claveToColor = {};
@@ -143,39 +227,7 @@ function generateTrimester(n) {
       }
     } catch(e){}
   }
-
-  // ---------- Call calificaciones constructor (build or update sheet calificacionesN) ----------
-  const calificacionesResult = buildCalificaciones(n, alumnos, instrumentos, claveToColor);
-
-  if (!calificacionesResult || !calificacionesResult.sheetCalif) {
-    SpreadsheetApp.getUi().alert("Error construyendo/actualizando calificaciones" + n);
-    return;
-  }
-
-  // ---------- Call medias constructor (build mediasN). It will compute columns for each clave  ----------
-  sheetMedias = buildMedias(n, calificacionesResult.sheetCalif, alumnos, sheetCriteria, claveToColor);
-
-  // ------------------ Call to get links --------------
-  writeLinks(n, calificacionesResult.sheetCalif, sheetMedias);
-
-
-  SpreadsheetApp.getUi().alert("Calificaciones y medias para Trimestre " + n + " generadas/actualizadas correctamente.");
-}
-
-/* helpers and exposed functions */
-
-function trimester1(){ generateTrimester(1); }
-function trimester2(){ generateTrimester(2); }
-function trimester3(){ generateTrimester(3); }
-
-function columnToLetter(col) {
-  let letter = '';
-  while (col > 0) {
-    let temp = (col - 1) % 26;
-    letter = String.fromCharCode(temp + 65) + letter;
-    col = Math.floor((col - temp - 1) / 26);
-  }
-  return letter;
+  return claveToColor;
 }
 
 function arraysEqual(a,b) {
