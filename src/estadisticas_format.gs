@@ -20,12 +20,3 @@ function estadisticas_applyBaseStyles(sheet) {
     Logger.log('estadisticas_applyBaseStyles: ' + e);
   }
 }
-    
-    // Alineación
-    range.setHorizontalAlignment('center');
-    range.setVerticalAlignment('middle');
-    
-  } catch(e) {
-    Logger.log('estadisticas_formatTable: ' + e);
-  }
-}
