@@ -37,6 +37,16 @@ src/
   medias_data.gs                 # Manejo de datos (lectura criterios, fórmulas de media)
   medias_format.gs               # Formato específico (colores, anchos, formato condicional)
   
+  # === Sistema de estadísticas/análisis (Fase 1) ===
+  estadisticas_impl.gs               # Orquestador: coordina análisis y panel
+  estadisticas_panel.gs              # Creación del panel de control
+  estadisticas_analyze.gs            # Implementación de 4 tipos de análisis
+  estadisticas_format.gs             # Formato específico de estadísticas
+  estadisticas_menu.gs               # Menú personalizado para estadísticas
+  
+  # === Menú principal ===
+  medias_menu.gs                     # Menú contextual (medias + estadísticas)
+  
   # === Tests (estructura mirror) ===
   tests/
     test_runner.gs                     # Suite maestra: ejecuta todos los tests
@@ -138,6 +148,41 @@ runIntegrationTest_Phase3()  // Tras completar Phase2
 // Todos los tests
 runAllTests()
 ```
+
+## Hoja Estadísticas (Fase 1)
+
+La hoja **estadísticas** se genera automáticamente cuando se crea el **Trimestre 1**. Proporciona análisis dinámicos de los datos de calificaciones.
+
+### Características
+
+- **Panel de Control** (filas 1-18):
+  - Selector de tipo de análisis
+  - Selector de alumno (para análisis individuales)
+  - Lista de instrumentos con selección mediante marcas "X"
+  - Botón **Generar Análisis** en el menú contextual
+
+- **4 tipos de análisis disponibles:**
+  1. **Media por Instrumentos**: Promedio de calificaciones de instrumentos seleccionados (todos los alumnos)
+  2. **Criterios Evaluaciones**: Conteo de evaluaciones por criterios, agrupadas por trimestre
+  3. **Notas por Alumno**: Desglose de calificaciones de un alumno específico por criterios y trimestres
+  4. **Dashboard General**: Resumen de estadísticas generales por trimestre (n° alumnos, media clase, suspensos)
+
+### Cómo usar
+
+1. **Navega** a la hoja **estadísticas**
+2. **Configura** los parámetros en el panel de control:
+   - Selecciona el tipo de análisis en la lista desplegable
+   - Marca con "X" los instrumentos que deseas incluir (opcional según el tipo)
+   - Selecciona un alumno si es necesario (para análisis individual)
+3. **Haz clic** en el menú **Estadísticas** → **Generar Análisis**
+4. El análisis se regenerará completamente en la zona de resultados (a partir de la fila 20)
+
+### Notas
+
+- Cada análisis limpia y regenera los resultados completos
+- Los instrumentos se extraen automáticamente de las hojas calificacionesN
+- La lista de alumnos se pobla desde calificaciones1
+- Los análisis leen datos en tiempo real de las hojas de calificaciones y medias
 
 ## Verificación tras refactorización
 
