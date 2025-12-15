@@ -136,7 +136,7 @@ function buscarValorAlumnoEnHoja(sheetMedias, alumno, instrumento) {
     const headers = sheetMedias.getRange(1, 1, 1, sheetMedias.getLastColumn()).getValues()[0];
     
     // Extraer nombre del instrumento sin trimestre
-    const instrNombre = instrumento.replace(/\s+T\d/, '').trim();
+      const instrNombre = instrumento.replace(/\s*\(T\d\)/, '').trim();
     
     // Buscar columna del instrumento
     let colInstrumento = -1;

@@ -21,6 +21,8 @@ function estadisticas_createControlPanel(sheet) {
     // Encabezado lista
     sheet.getRange('A3').setValue('Instrumentos');
     sheet.getRange('A3').setFontWeight('bold').setBackground('#E8E8E8');
+      sheet.getRange('B3').setValue('Seleccionar');
+      sheet.getRange('B3').setFontWeight('bold').setBackground('#E8E8E8');
     
     // Llenar lista de instrumentos disponibles (sin protección)
     estadisticas_populateInstrumentsList(sheet);
@@ -62,10 +64,10 @@ function estadisticas_populateInstrumentsList(sheet) {
       }
     }
     
-    // Escribir instrumentos en columna A a partir de fila 6
+    // Escribir instrumentos en columna A a partir de fila 4
     const instrumentosArray = Array.from(instrumentosSet).sort();
     if (instrumentosArray.length > 0) {
-      const instrumentosRange = sheet.getRange(6, 1, instrumentosArray.length, 1);
+      const instrumentosRange = sheet.getRange(4, 1, instrumentosArray.length, 1);
       instrumentosRange.setValues(instrumentosArray.map(i => [i]));
     }
     
