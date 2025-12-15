@@ -1,67 +1,29 @@
 /**
  * estadisticas_panel.gs
- * Crea y gestiona el panel de control de la hoja estadísticas.
+ * Crea el panel de control simple para seleccionar instrumentos.
  */
 
 /**
  * Crea el panel de control en la hoja estadísticas.
+ * Solo permite seleccionar instrumentos con X.
  * @param {Sheet} sheet - Hoja estadísticas
  */
 function estadisticas_createControlPanel(sheet) {
   try {
-    // ===== SECCIÓN 1: TIPO DE ANÁLISIS =====
-    sheet.getRange('A1').setValue('PANEL DE CONTROL - ESTADÍSTICAS');
+    // Título
+    sheet.getRange('A1').setValue('MEDIA POR INSTRUMENTOS');
     sheet.getRange('A1').setFontSize(14).setFontWeight('bold');
     
-    sheet.getRange('A2').setValue('Tipo de Análisis:');
-    sheet.getRange('B2').setValue('Media por instrumentos seleccionados');
+    // Instrucciones
+    sheet.getRange('A2').setValue('Marca los instrumentos con X para incluir en el análisis:');
+    sheet.getRange('A2').setFontStyle('italic').setFontColor('#666666');
     
-    // Validación con lista desplegable
-    try {
-      const tiposAnalisis = [
-        'Media por instrumentos seleccionados',
-        'Criterios - Evaluaciones totales',
-        'Alumno - Notas por criterio',
-        'Dashboard - Resumen general'
-      ];
-      
-      const rule = SpreadsheetApp.newDataValidation()
-        .requireValueInList(tiposAnalisis, true)
-        .build();
-      sheet.getRange('B2').setDataValidation(rule);
-    } catch(e) {
-      Logger.log('Error creando validación tipo análisis: ' + e);
-    }
+    // Encabezado lista
+    sheet.getRange('A3').setValue('Instrumentos');
+    sheet.getRange('A3').setFontWeight('bold').setBackground('#E8E8E8');
     
-    // ===== SECCIÓN 2: ALUMNO SELECCIONADO =====
-    sheet.getRange('A4').setValue('Alumno (para análisis individual):');
-    sheet.getRange('B4').setValue('');
-    
-    // ===== SECCIÓN 3: INSTRUMENTOS SELECCIONADOS =====
-    sheet.getRange('A6').setValue('Instrumentos (marca con X):');
-    sheet.getRange('B6').setValue('Seleccionar');
-    
-    // Llenar lista de instrumentos disponibles
+    // Llenar lista de instrumentos disponibles (sin protección)
     estadisticas_populateInstrumentsList(sheet);
-    
-    // ===== BOTÓN GENERAR =====
-    sheet.getRange('A18:B18').merge();
-    sheet.getRange('A18').setValue('🔄 GENERAR ANÁLISIS');
-    sheet.getRange('A18')
-      .setBackground('#4CAF50')
-      .setFontColor('white')
-      .setFontWeight('bold')
-      .setFontSize(12)
-      .setHorizontalAlignment('center')
-      .setVerticalAlignment('middle');
-    
-    // Nota informativa
-    sheet.getRange('A19').setValue('↓ Datos del análisis aparecerán abajo ↓');
-    sheet.getRange('A19').setFontStyle('italic').setFontColor('#666666');
-    
-    // Aplicar estilos
-    sheet.getRange('A1:B4').setHorizontalAlignment('left');
-    sheet.getRange('A2:A19').setFontWeight('bold');
     
   } catch(e) {
     Logger.log('estadisticas_createControlPanel: ' + e);

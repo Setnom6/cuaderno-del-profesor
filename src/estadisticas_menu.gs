@@ -1,33 +1,17 @@
 /**
  * estadisticas_menu.gs
- * Menú y funciones de disparador para la hoja estadísticas.
- * Integra el menú personalizado cuando se abre la hoja de estadísticas.
+ * Menú contextual para la hoja estadísticas.
  */
 
 /**
- * Hook que se ejecuta al abrir el documento.
- * Detecta si la hoja activa es 'estadísticas' y crea el menú correspondiente.
- * Se integra con medias_menu.gs que ya tiene su propio onOpen.
- */
-function estadisticas_onOpen() {
-  const ss = SpreadsheetApp.getActive();
-  const activeSheet = ss.getActiveSheet();
-  
-  if (activeSheet && activeSheet.getName() === 'estadísticas') {
-    createEstadisticasMenu();
-  }
-}
-
-/**
- * Crear menú personalizado para la hoja estadísticas.
- * Aparece solo cuando la hoja activa es 'estadísticas'.
+ * Crea el menú "Estadísticas" cuando se abre la hoja.
  */
 function createEstadisticasMenu() {
   try {
     const ui = SpreadsheetApp.getUi();
     
     ui.createMenu('Estadísticas')
-      .addItem('🔄 Generar Análisis', 'onGenerarAnalisis')
+      .addItem('Generar Análisis', 'onGenerarAnalisis')
       .addToUi();
     
   } catch(e) {
@@ -36,8 +20,7 @@ function createEstadisticasMenu() {
 }
 
 /**
- * Función disparada al hacer clic en "Generar Análisis" del menú.
- * Valida parámetros y regenera el análisis completo.
+ * Genera el análisis cuando se ejecuta desde el menú.
  */
 function onGenerarAnalisis() {
   try {
@@ -49,18 +32,9 @@ function onGenerarAnalisis() {
       return;
     }
     
-    // Leer parámetros del panel de control
-    const params = estadisticas_readParameters(sheet);
-    
-    if (!params.tipo || !params.tipo.trim()) {
-      SpreadsheetApp.getUi().alert('Por favor, selecciona un tipo de análisis.');
-      return;
-    }
-    
-    // Llamar a la función principal de regeneración
-    estadisticas_regenerateAnalysis();
-    
-    SpreadsheetApp.getUi().alert('Análisis regenerado correctamente.');
+    // Generar análisis
+    estadisticas_generateAnalysis(sheet);
+    SpreadsheetApp.getUi().alert('Análisis generado correctamente.');
     
   } catch(e) {
     Logger.log('onGenerarAnalisis error: ' + e);
