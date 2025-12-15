@@ -13,12 +13,10 @@ function buildEstadisticasSheet() {
   
   // Obtener o crear la hoja
   let sheetEstadisticas = ss.getSheetByName(hojaEstadisticasName);
-  if (!sheetEstadisticas) {
-    sheetEstadisticas = ss.insertSheet(hojaEstadisticasName);
-  } else {
-    // Limpiar contenido previo
-    sheetEstadisticas.clear({ contentsOnly: false, formatOnly: false });
+  if (sheetEstadisticas) {
+    try { ss.deleteSheet(sheetEstadisticas); } catch(e) {}
   }
+  sheetEstadisticas = ss.insertSheet(hojaEstadisticasName);
   
   // Establecer dimensiones mínimas
   ensureSheetDimensions(sheetEstadisticas, 200, 10);

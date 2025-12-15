@@ -22,7 +22,7 @@ function estadisticas_generateAnalysis(sheet) {
         break;
       }
     }
-    const resultStartRow = Math.max(lastInstRow + 1, listaStartRow + 1); // inmediatamente debajo de la lista
+    const resultStartRow = Math.max(lastInstRow + 2, listaStartRow + 2); // dejar una fila en blanco
     
     // Limpiar área de resultados dinámica
     try {
@@ -84,7 +84,7 @@ function estadisticas_generateAnalysis(sheet) {
         // Extraer trimestre desde el sufijo (Tn) al final
         const matchTrimestre = instrumento.match(/\(T(\d)\)/);
         if (!matchTrimestre) {
-          fila.push('N/A');
+          fila.push('');
           return;
         }
         
@@ -92,7 +92,7 @@ function estadisticas_generateAnalysis(sheet) {
         const sheetCalifTrim = ss.getSheetByName(`calificaciones${trimestre}`);
         
         if (!sheetCalifTrim) {
-          fila.push('N/A');
+          fila.push('');
           return;
         }
         
@@ -102,12 +102,12 @@ function estadisticas_generateAnalysis(sheet) {
           fila.push(valor);
           valoresNumricos.push(valor);
         } else {
-          fila.push('N/A');
+          fila.push('');
         }
       });
       
       // Calcular media
-      let media = 'N/A';
+      let media = '';
       if (valoresNumricos.length > 0) {
         media = (valoresNumricos.reduce((a, b) => a + b) / valoresNumricos.length).toFixed(2);
       }
@@ -134,6 +134,20 @@ function estadisticas_generateAnalysis(sheet) {
     if (resultados.length > 1 && ultimaCol > 2) {
       sheet.getRange(resultStartRow + 1, 2, resultados.length - 1, ultimaCol - 2)
         .setNumberFormat('0.00');
+    }
+
+    // Formato condicional: en la última columna (MEDIA), rojo si < 5
+    if (resultados.length > 1) {
+      try {
+        const mediaRange = sheet.getRange(resultStartRow + 1, ultimaCol, resultados.length - 1, 1);
+        const redRule = SpreadsheetApp.newConditionalFormatRule()
+          .whenNumberLessThan(5)
+          .setFontColor('#FF0000')
+          .setRanges([mediaRange])
+          .build();
+        const rules = sheet.getConditionalFormatRules();
+        sheet.setConditionalFormatRules(rules.concat([redRule]));
+      } catch(e) {}
     }
     
   } catch(e) {
