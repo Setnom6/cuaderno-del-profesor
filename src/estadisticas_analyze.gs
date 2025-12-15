@@ -11,13 +11,29 @@ function estadisticas_generateAnalysis(sheet) {
   try {
     const ss = SpreadsheetApp.getActive();
     
-    // Limpiar área de resultados
-    sheet.getRange('A100:Z200').clearContent();
+    // Encontrar el último instrumento listado (col A, desde fila 4)
+    let listaStartRow = 4;
+    let lastInstRow = listaStartRow - 1;
+    while (true) {
+      const val = sheet.getRange(lastInstRow + 1, 1).getValue();
+      if (val && val.toString().trim() !== '') {
+        lastInstRow++;
+      } else {
+        break;
+      }
+    }
+    const resultStartRow = Math.max(lastInstRow + 1, listaStartRow + 1); // inmediatamente debajo de la lista
+    
+    // Limpiar área de resultados dinámica
+    try {
+      const maxRows = sheet.getMaxRows();
+      sheet.getRange(resultStartRow, 1, Math.max(0, maxRows - resultStartRow + 1), 26).clearContent();
+    } catch(e) {}
     
     // Leer instrumentos seleccionados (celdas A4 hacia abajo con X en columna B)
     const instrumentosSeleccionados = [];
     let row = 4;
-    while (row < 100) {
+    while (true) {
       const valor = sheet.getRange(row, 1).getValue();
       if (!valor || valor.toString().trim() === '') break;
       
@@ -65,8 +81,8 @@ function estadisticas_generateAnalysis(sheet) {
       
       // Para cada instrumento, buscar su valor en calificacionesN (columna Media del instrumento)
       instrumentosSeleccionados.forEach(instrumento => {
-        // Extraer trimestre del instrumento (ej: "Prueba escrita T1" -> 1)
-        const matchTrimestre = instrumento.match(/T(\d)/);
+        // Extraer trimestre desde el sufijo (Tn) al final
+        const matchTrimestre = instrumento.match(/\(T(\d)\)/);
         if (!matchTrimestre) {
           fila.push('N/A');
           return;
@@ -82,10 +98,11 @@ function estadisticas_generateAnalysis(sheet) {
         
         // Buscar alumno en calificacionesN y obtener valor de la columna Media del instrumento
         const valor = buscarMediaInstrumentoEnCalificaciones(sheetCalifTrim, alumno, instrumento);
-        fila.push(valor !== null ? (typeof valor === 'number' ? valor.toFixed(2) : valor) : 'N/A');
-        
-        if (typeof valor === 'number') {
+        if (typeof valor === 'number' && isFinite(valor)) {
+          fila.push(valor);
           valoresNumricos.push(valor);
+        } else {
+          fila.push('N/A');
         }
       });
       
@@ -99,23 +116,25 @@ function estadisticas_generateAnalysis(sheet) {
       resultados.push(fila);
     });
     
-    // Escribir resultados a partir de fila 100
-    const resultRange = sheet.getRange(100, 1, resultados.length, resultados[0].length);
+    // Escribir resultados inmediatamente debajo de la lista
+    const resultRange = sheet.getRange(resultStartRow, 1, resultados.length, resultados[0].length);
     resultRange.setValues(resultados);
     
     // Formatear header
-    sheet.getRange(100, 1, 1, resultados[0].length)
+    sheet.getRange(resultStartRow, 1, 1, resultados[0].length)
       .setFontWeight('bold')
       .setBackground('#CCCCCC');
     
     // Formatear columna MEDIA en negrita
     const ultimaCol = resultados[0].length;
-    sheet.getRange(101, ultimaCol, resultados.length - 1, 1)
+    sheet.getRange(resultStartRow + 1, ultimaCol, resultados.length - 1, 1)
       .setFontWeight('bold');
     
     // Formatear números
-    sheet.getRange(101, 2, resultados.length - 1, ultimaCol - 2)
-      .setNumberFormat('0.00');
+    if (resultados.length > 1 && ultimaCol > 2) {
+      sheet.getRange(resultStartRow + 1, 2, resultados.length - 1, ultimaCol - 2)
+        .setNumberFormat('0.00');
+    }
     
   } catch(e) {
     Logger.log('estadisticas_generateAnalysis error: ' + e);
@@ -170,8 +189,15 @@ function buscarMediaInstrumentoEnCalificaciones(sheetCalif, alumno, instrumento)
     if (foundRow === -1) return null;
 
     const valor = sheetCalif.getRange(foundRow, mediaCol).getValue();
-    const numValue = parseFloat(valor);
-    return isNaN(numValue) ? null : numValue;
+    // Aceptar solo números finitos. Tratar Date/strings como nulos.
+    if (valor instanceof Date) return null;
+    if (typeof valor === 'number' && isFinite(valor)) return valor;
+    if (typeof valor === 'string') {
+      const normalized = valor.replace(/,/g, '.');
+      const n = parseFloat(normalized);
+      return isNaN(n) ? null : n;
+    }
+    return null;
   } catch(e) {
     Logger.log('buscarMediaInstrumentoEnCalificaciones error: ' + e);
     return null;

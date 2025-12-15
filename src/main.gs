@@ -95,10 +95,9 @@ function generateTrimester(n, showAlert = true) {
   const sheetObservaciones = buildObservaciones(n, alumnos);
 
   // ---------- Build estadísticas sheet (only once after first trimester) ----------
-  if (n === 1) {
-    buildEstadisticasSheet();
-    estadisticas_populateInstrumentsList(ss.getSheetByName('estadísticas'));
-  }
+  // Siempre reconstruir/limpiar estadísticas para evitar estados inconsistentes
+  buildEstadisticasSheet();
+  estadisticas_populateInstrumentsList(ss.getSheetByName('estadísticas'));
 
   // ------------------ Call to get links --------------
   writeLinks(n, calificacionesResult.sheetCalif, sheetMedias, sheetObservaciones);
