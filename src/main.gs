@@ -98,7 +98,6 @@ function generateTrimester(n, showAlert = true) {
   if (n === 1) {
     buildEstadisticasSheet();
     estadisticas_populateInstrumentsList(ss.getSheetByName('estadísticas'));
-    estadisticas_populateAlumnosList(ss.getSheetByName('estadísticas'));
   }
 
   // ------------------ Call to get links --------------
