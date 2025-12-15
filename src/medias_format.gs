@@ -32,7 +32,7 @@ function medias_applyColorsByClave(sheet, clavesLista, numAlumnos, claveToColor)
 /**
  * Aplica formato especial a la columna "Media Final":
  * - Fondo blanco
- * - Borde negro sólido alrededor
+ * - Borde grueso negro a izquierda y derecha
  * @param {Sheet} sheet
  * @param {number} numAlumnos
  */
@@ -43,7 +43,7 @@ function medias_applyMediaFinalFormat(sheet, numAlumnos) {
     const mediaFinalRange = sheet.getRange(1, 2, 1 + numAlumnos, 1);
     mediaFinalRange
       .setBackground("#ffffff")
-      .setBorder(true, true, true, true, false, false, "#000000", SpreadsheetApp.BorderStyle.SOLID);
+      .setBorder(false, true, false, true, false, false, "#000000", SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
   } catch(e) {
     Logger.log('medias_applyMediaFinalFormat: ' + e);
   }
@@ -144,7 +144,26 @@ function medias_applyCompetenciaColors(sheet, competenciasInfo, colStart, numAlu
 }
 
 /**
- * Aplica borde vertical (separador) entre la última columna de criterios y la primera de competencias.
+ * Aplica borde grueso separador a la fila de resumen de medias.
+ * Crea un borde horizontal grueso (SOLID_MEDIUM) en la parte superior de la fila.
+ * @param {Sheet} sheet
+ * @param {number} summaryRow - Fila del resumen (2 + numAlumnos)
+ * @param {number} totalColumns - Total de columnas en la hoja
+ */
+function medias_applySummaryRowBorder(sheet, summaryRow, totalColumns) {
+  if (!sheet || summaryRow < 1 || totalColumns < 1) return;
+  
+  try {
+    // Aplicar borde superior grueso a toda la fila de resumen
+    const range = sheet.getRange(summaryRow, 1, 1, totalColumns);
+    range.setBorder(true, false, false, false, null, null, "#000000", SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+  } catch(e) {
+    Logger.log('medias_applySummaryRowBorder: ' + e);
+  }
+}
+
+/**
+ * Aplica borde grueso derecho separador entre criterios y competencias.
  * @param {Sheet} sheet
  * @param {number} colLastCriterio - Columna del último criterio
  * @param {number} numAlumnos
@@ -159,5 +178,49 @@ function medias_applySeparatorBorder(sheet, colLastCriterio, numAlumnos) {
     range.setBorder(null, null, null, true, null, null, "#000000", SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
   } catch(e) {
     Logger.log('medias_applySeparatorBorder: ' + e);
+  }
+}
+
+/**
+ * Protege toda la hoja mediasN con advertencia.
+ * Todas las celdas muestran advertencia antes de permitir edición.
+ * @param {Sheet} sheet
+ * @param {number} numRows - Total de filas usadas (header + alumnos + resumen)
+ * @param {number} numCols - Total de columnas usadas
+ */
+function medias_protectSheet(sheet, numRows, numCols) {
+  if (!sheet || numRows < 1 || numCols < 1) return;
+  
+  try {
+    // Limpiar protecciones previas
+    const protections = sheet.getProtections(SpreadsheetApp.ProtectionType.RANGE);
+    protections.forEach(protection => protection.remove());
+    
+    // Proteger toda la hoja con advertencia
+    const range = sheet.getRange(1, 1, numRows, numCols);
+    const protection = range.protect()
+      .setDescription('Hoja de medias - Los valores se calculan automáticamente');
+    
+    protection.setWarningOnly(true);
+    
+  } catch(e) {
+    Logger.log('medias_protectSheet: ' + e);
+  }
+}
+
+/**
+ * Aplica sombreado gris claro a la columna de alumnos en mediasN.
+ * @param {Sheet} sheet
+ * @param {number} numAlumnos
+ */
+function medias_applyAlumnosColumnShading(sheet, numAlumnos) {
+  if (!sheet || numAlumnos <= 0) return;
+  
+  try {
+    // Sombrear columna de alumnos (filas 2 en adelante, datos sin header)
+    const alumnosRange = sheet.getRange(2, 1, numAlumnos + 1, 1);
+    alumnosRange.setBackground("#f3f3f3");
+  } catch(e) {
+    Logger.log('medias_applyAlumnosColumnShading: ' + e);
   }
 }

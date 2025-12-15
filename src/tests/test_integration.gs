@@ -430,7 +430,10 @@ function verifyCalificacionesStructure(sheet, expected) {
 function verifyMediasStructure(sheet, expected) {
   const lastCol = sheet.getLastColumn();
   const headerRow = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
-  const numAlumnos = sheet.getLastRow() - 1;
+  const lastRow = sheet.getLastRow();
+  const lastLabel = lastRow >= 2 ? sheet.getRange(lastRow, 1).getValue() : '';
+  const hasSummaryRow = (typeof lastLabel === 'string') && lastLabel.toString().trim().toLowerCase() === 'medias';
+  const numAlumnos = (lastRow - 1) - (hasSummaryRow ? 1 : 0);
   
   // Verificar número de alumnos
   if (numAlumnos !== expected.alumnos.length) {
@@ -566,7 +569,10 @@ function verifyGradesPreserved(sheet, expected) {
  * @param {string} tipo - 'competencias' o 'criterios'
  */
 function verifyMediaFinalFormulas(sheet, tipo) {
-  const numAlumnos = sheet.getLastRow() - 1;
+  const lastRow = sheet.getLastRow();
+  const lastLabel = lastRow >= 2 ? sheet.getRange(lastRow, 1).getValue() : '';
+  const hasSummaryRow = (typeof lastLabel === 'string') && lastLabel.toString().trim().toLowerCase() === 'media';
+  const numAlumnos = (lastRow - 1) - (hasSummaryRow ? 1 : 0);
   if (numAlumnos <= 0) return;
   
   for (let i = 0; i < numAlumnos; i++) {

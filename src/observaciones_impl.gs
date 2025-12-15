@@ -6,9 +6,9 @@
 
 /**
  * Construye la hoja observacionesN si no existe.
- * Si ya existe, no hace nada (preserva los datos existentes).
+ * Si ya existe, compara el listado de alumnos y actualiza insertando nuevos alumnos en sus posiciones correspondientes.
  * @param {number} n - Número del trimestre
- * @param {Array<Array<string>>} alumnos - Lista de alumnos [[nombre1], [nombre2], ...]
+ * @param {Array<Array<string>>} alumnos - Lista de alumnos [[nombre1], [nombre2], ...] (ya ordenados alfabéticamente)
  * @returns {Sheet} La hoja observacionesN (existente o creada)
  */
 function buildObservacionesImpl(n, alumnos) {
@@ -18,8 +18,9 @@ function buildObservacionesImpl(n, alumnos) {
   // Verificar si la hoja ya existe
   let sheetObservaciones = ss.getSheetByName(hojaObservacionesName);
   if (sheetObservaciones) {
-    // La hoja ya existe, no hacer nada
-    Logger.log(`Hoja ${hojaObservacionesName} ya existe, se preservan los datos`);
+    // Comparar listado actual con el de la hoja
+    observaciones_updateStudentList(sheetObservaciones, alumnos);
+    Logger.log(`Hoja ${hojaObservacionesName} actualizada con nuevos alumnos si los hay`);
     return sheetObservaciones;
   }
 
@@ -70,9 +71,26 @@ function buildObservacionesImpl(n, alumnos) {
   if (alumnos.length > 0) {
     observaciones_applyAlignment(sheetObservaciones, alumnos.length, observacionesHeaders.length);
   }
+  
+  // Proteger headers y columna de alumnos con advertencia
+  observaciones_protectHeadersAndAlumnos(sheetObservaciones, alumnos.length, observacionesHeaders.length);
 
   // Freeze primera fila
   freezeRows(sheetObservaciones, 1);
+
+  // Eliminar filas sobrantes
+  const maxRows = sheetObservaciones.getMaxRows();
+  const usedRows = 1 + alumnos.length; // header + alumnos
+  if (maxRows > usedRows) {
+    sheetObservaciones.deleteRows(usedRows + 1, maxRows - usedRows);
+  }
+  
+  // Eliminar columnas sobrantes
+  const maxCols = sheetObservaciones.getMaxColumns();
+  const usedCols = observacionesHeaders.length;
+  if (maxCols > usedCols) {
+    sheetObservaciones.deleteColumns(usedCols + 1, maxCols - usedCols);
+  }
 
   return sheetObservaciones;
 }

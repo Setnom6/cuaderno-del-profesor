@@ -277,3 +277,68 @@ function calif_applyColorsByClave(sheet, numAlumnos, finalNumCols, claveToColor)
     }
   }
 }
+
+/**
+ * Aplica sombreado gris claro a la columna de alumnos en calificacionesN.
+ * @param {Sheet} sheet
+ * @param {number} numAlumnos
+ */
+function calif_applyAlumnosColumnShading(sheet, numAlumnos) {
+  if (!sheet || numAlumnos <= 0) return;
+  
+  try {
+    // Sombrear columna de alumnos (filas 3 en adelante, datos sin headers)
+    const alumnosRange = sheet.getRange(3, 1, numAlumnos, 1);
+    alumnosRange.setBackground("#f3f3f3");
+  } catch(e) {
+    Logger.log('calif_applyAlumnosColumnShading: ' + e);
+  }
+}
+
+/**
+ * Protege headers, columna de alumnos y columnas de Media en calificacionesN.
+ * Las celdas de notas quedan sin protección para permitir edición libre.
+ * @param {Sheet} sheet
+ * @param {Array<{nombre: string, criterios: Array<string>}>} instrumentos
+ * @param {number} numAlumnos
+ */
+function calif_protectHeadersAndFormulas(sheet, instrumentos, numAlumnos) {
+  if (!sheet || !instrumentos || numAlumnos <= 0) return;
+  
+  try {
+    // Limpiar protecciones previas
+    const protections = sheet.getProtections(SpreadsheetApp.ProtectionType.RANGE);
+    protections.forEach(protection => protection.remove());
+    
+    // 1. Proteger headers (filas 1-2, todas las columnas)
+    const finalNumCols = sheet.getLastColumn();
+    const headersRange = sheet.getRange(1, 1, 2, finalNumCols);
+    const headersProtection = headersRange.protect()
+      .setDescription('Headers - Estructura generada automáticamente');
+    headersProtection.setWarningOnly(true);
+    
+    // 2. Proteger columna Alumno (filas 3+)
+    const alumnosRange = sheet.getRange(3, 1, numAlumnos, 1);
+    const alumnosProtection = alumnosRange.protect()
+      .setDescription('Nombres de alumnos - Se sincronizan automáticamente');
+    alumnosProtection.setWarningOnly(true);
+    
+    // 3. Proteger columnas de Media de cada instrumento
+    let colPtr = 2;
+    instrumentos.forEach(inst => {
+      const criterios = inst.criterios;
+      const blockSize = criterios.length + 1;
+      const colMedia = colPtr + criterios.length;
+      
+      const mediaRange = sheet.getRange(3, colMedia, numAlumnos, 1);
+      const mediaProtection = mediaRange.protect()
+        .setDescription(`Media de ${inst.nombre} - Calculada automáticamente`);
+      mediaProtection.setWarningOnly(true);
+      
+      colPtr += blockSize;
+    });
+    
+  } catch(e) {
+    Logger.log('calif_protectHeadersAndFormulas: ' + e);
+  }
+}

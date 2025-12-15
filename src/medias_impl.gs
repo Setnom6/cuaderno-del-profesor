@@ -97,6 +97,23 @@ function buildMediasImpl(n, sheetCalif, alumnos, sheetCriteria, claveToColor) {
         }
       }
     }
+
+    // ===== Fila de resumen (media de todos los alumnos) =====
+    const summaryRow = 2 + alumnos.length;
+    try {
+      // Etiqueta en primera columna
+      sheetMedias.getRange(summaryRow, 1).setValue("Medias");
+      // Calcular medias por columna para columnas 2..totalHeaders
+      const totalHeaders = mediasHeaders.length + competenciasInfo.length;
+      for (let col = 2; col <= totalHeaders; col++) {
+        const colLetter = columnToLetter(col);
+        const rango = `${colLetter}2:${colLetter}${summaryRow - 1}`;
+        const formula = `=IFERROR(AVERAGEIF(${rango};"<>");"")`;
+        setFormula(sheetMedias, summaryRow, col, formula);
+      }
+    } catch (e) {
+      Logger.log('buildMediasImpl (summaryRow): ' + e);
+    }
   }
 
   // ========== FASE 5: FORMATO ==========
@@ -113,23 +130,28 @@ function buildMediasImpl(n, sheetCalif, alumnos, sheetCriteria, claveToColor) {
     medias_applyCompetenciaColors(sheetMedias, competenciasInfo, colCompStart, alumnos.length);
   }
 
-  // Borde separador entre criterios y competencias
+  // Borde separador entre criterios y competencias (incluir fila resumen)
   if (competenciasInfo.length > 0 && clavesLista.length > 0) {
     const colLastCriterio = 2 + clavesLista.length;
-    medias_applySeparatorBorder(sheetMedias, colLastCriterio, alumnos.length);
+    medias_applySeparatorBorder(sheetMedias, colLastCriterio, alumnos.length + 1);
   }
 
-  // Formato especial para Media Final
+  // Formato especial para Media Final (incluir fila resumen)
   if (alumnos.length > 0) {
-    medias_applyMediaFinalFormat(sheetMedias, alumnos.length);
+    medias_applyMediaFinalFormat(sheetMedias, alumnos.length + 1);
+  }
+
+  // Borde grueso separador para fila de resumen
+  if (alumnos.length > 0) {
+    medias_applySummaryRowBorder(sheetMedias, 2 + alumnos.length, totalHeaders);
   }
 
   // Anchos de columna
   medias_applyColumnWidths(sheetMedias, alumnos, clavesLista, competenciasInfo);
 
-  // Formato decimal (2 decimales) - incluyendo competencias
+  // Formato decimal (2 decimales) - incluyendo competencias y fila resumen
   if (alumnos.length > 0 && totalHeaders > 2) {
-    applyDecimalFormat(sheetMedias, 2, 2, alumnos.length, totalHeaders - 1, 2);
+    applyDecimalFormat(sheetMedias, 2, 2, alumnos.length + 1, totalHeaders - 1, 2);
   }
 
   // Formato condicional (rojo si <5)
@@ -137,8 +159,29 @@ function buildMediasImpl(n, sheetCalif, alumnos, sheetCriteria, claveToColor) {
     medias_applyConditionalFormatting(sheetMedias, alumnos.length);
   }
 
-  // Freeze primera fila
+  // Sombreado gris a columna de alumnos
+  if (alumnos.length > 0) {
+    medias_applyAlumnosColumnShading(sheetMedias, alumnos.length);
+  }
+
+  // Freeze primera fila y primera columna (Alumno y Media Final siempre visibles)
   freezeRows(sheetMedias, 1);
+  freezeColumns(sheetMedias, 2);
+  
+  // Eliminar filas sobrantes por debajo de la fila Medias
+  if (alumnos.length > 0) {
+    const summaryRow = 2 + alumnos.length;
+    const maxRows = sheetMedias.getMaxRows();
+    if (maxRows > summaryRow) {
+      sheetMedias.deleteRows(summaryRow + 1, maxRows - summaryRow);
+    }
+  }
+  
+  // Proteger toda la hoja con advertencia
+  if (alumnos.length > 0) {
+    const numRows = 2 + alumnos.length; // header + alumnos + resumen
+    medias_protectSheet(sheetMedias, numRows, totalHeaders);
+  }
   
   // Activar la hoja medias y crear menú
   sheetMedias.activate();

@@ -127,3 +127,83 @@ function observaciones_applyAlignment(sheet, numAlumnos, numColumns) {
     Logger.log('observaciones_applyAlignment: ' + e);
   }
 }
+
+/**
+ * Protege headers y columna de alumnos con advertencia (permite editar tras confirmar).
+ * Esto previene ediciones accidentales pero permite cambios deliberados.
+ * @param {Sheet} sheet
+ * @param {number} numAlumnos
+ * @param {number} numColumns - Total de columnas
+ */
+function observaciones_protectHeadersAndAlumnos(sheet, numAlumnos, numColumns) {
+  if (!sheet) return;
+  
+  try {
+    // Limpiar protecciones previas
+    const protections = sheet.getProtections(SpreadsheetApp.ProtectionType.RANGE);
+    protections.forEach(protection => protection.remove());
+    
+    // 1. Proteger headers (fila 1, todas las columnas)
+    const headersRange = sheet.getRange(1, 1, 1, numColumns);
+    const headersProtection = headersRange.protect()
+      .setDescription('Headers - Estructura generada automáticamente');
+    headersProtection.setWarningOnly(true);
+    
+    // 2. Proteger columna Alumno (filas 2+)
+    if (numAlumnos > 0) {
+      const alumnosRange = sheet.getRange(2, 1, numAlumnos, 1);
+      const alumnosProtection = alumnosRange.protect()
+        .setDescription('Nombres de alumnos - Se sincronizan automáticamente con el listado');
+      alumnosProtection.setWarningOnly(true);
+    }
+    
+  } catch(e) {
+    Logger.log('observaciones_protectHeadersAndAlumnos: ' + e);
+  }
+}
+
+/**
+ * Aplica formato completo a una fila individual de alumno.
+ * Útil cuando se inserta un nuevo alumno en medio de la hoja.
+ * @param {Sheet} sheet
+ * @param {number} row - Número de fila a formatear
+ * @param {number} numColumns - Número total de columnas
+ */
+function observaciones_applyRowFormatting(sheet, row, numColumns) {
+  if (!sheet || row < 2) return;
+  
+  try {
+    // Columna Alumno: fondo gris claro
+    sheet.getRange(row, 1).setBackground("#f3f3f3");
+    
+    // Columna Observaciones adicionales: ajuste de texto y alineación
+    const obsCol = 9;
+    if (obsCol <= numColumns) {
+      sheet.getRange(row, obsCol)
+        .setWrap(true)
+        .setVerticalAlignment("top")
+        .setHorizontalAlignment("left");
+    }
+    
+    // Validación de datos para columnas numéricas (2-8)
+    const numericColumns = observaciones_getNumericColumns();
+    const rule = SpreadsheetApp.newDataValidation()
+      .requireNumberGreaterThanOrEqualTo(0)
+      .setAllowInvalid(false)
+      .setHelpText('Solo números enteros positivos (0 o mayor)')
+      .build();
+    
+    numericColumns.forEach(col => {
+      if (col <= numColumns) {
+        sheet.getRange(row, col).setDataValidation(rule);
+      }
+    });
+    
+    // Bordes
+    sheet.getRange(row, 1, 1, numColumns)
+      .setBorder(true, true, true, true, true, true, "#000000", SpreadsheetApp.BorderStyle.SOLID);
+      
+  } catch(e) {
+    Logger.log('observaciones_applyRowFormatting: ' + e);
+  }
+}
