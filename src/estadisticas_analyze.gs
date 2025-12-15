@@ -63,7 +63,7 @@ function estadisticas_generateAnalysis(sheet) {
       const fila = [alumno];
       const valoresNumricos = [];
       
-      // Para cada instrumento, buscar su valor en mediasN
+      // Para cada instrumento, buscar su valor en calificacionesN (columna Media del instrumento)
       instrumentosSeleccionados.forEach(instrumento => {
         // Extraer trimestre del instrumento (ej: "Prueba escrita T1" -> 1)
         const matchTrimestre = instrumento.match(/T(\d)/);
@@ -73,15 +73,15 @@ function estadisticas_generateAnalysis(sheet) {
         }
         
         const trimestre = matchTrimestre[1];
-        const sheetMedias = ss.getSheetByName(`medias${trimestre}`);
+        const sheetCalifTrim = ss.getSheetByName(`calificaciones${trimestre}`);
         
-        if (!sheetMedias) {
+        if (!sheetCalifTrim) {
           fila.push('N/A');
           return;
         }
         
-        // Buscar alumno en mediasN y obtener valor del instrumento
-        const valor = buscarValorAlumnoEnHoja(sheetMedias, alumno, instrumento);
+        // Buscar alumno en calificacionesN y obtener valor de la columna Media del instrumento
+        const valor = buscarMediaInstrumentoEnCalificaciones(sheetCalifTrim, alumno, instrumento);
         fila.push(valor !== null ? (typeof valor === 'number' ? valor.toFixed(2) : valor) : 'N/A');
         
         if (typeof valor === 'number') {
@@ -130,41 +130,50 @@ function estadisticas_generateAnalysis(sheet) {
  * @param {string} instrumento - Nombre del instrumento (ej: "Prueba escrita T1")
  * @returns {number|null} Valor encontrado o null
  */
-function buscarValorAlumnoEnHoja(sheetMedias, alumno, instrumento) {
+function buscarMediaInstrumentoEnCalificaciones(sheetCalif, alumno, instrumento) {
   try {
-    // Leer headers (fila 1)
-    const headers = sheetMedias.getRange(1, 1, 1, sheetMedias.getLastColumn()).getValues()[0];
-    
-    // Extraer nombre del instrumento sin trimestre
-      const instrNombre = instrumento.replace(/\s*\(T\d\)/, '').trim();
-    
-    // Buscar columna del instrumento
-    let colInstrumento = -1;
-    for (let col = 0; col < headers.length; col++) {
-      const header = headers[col] ? headers[col].toString().trim() : '';
-      if (header === instrNombre) {
-        colInstrumento = col;
-        break;
+    if (!sheetCalif) return null;
+    const lastCol = sheetCalif.getLastColumn();
+    if (lastCol < 2) return null;
+
+    // Leer headers fila 1 y fila 2
+    const headersRow1 = sheetCalif.getRange(1, 1, 1, lastCol).getValues()[0].map(v => v ? v.toString().trim() : "");
+    const headersRow2 = sheetCalif.getRange(2, 1, 1, lastCol).getValues()[0].map(v => v ? v.toString().trim() : "");
+
+    // Nombre del instrumento sin sufijo (Tn)
+    const instrNombre = instrumento.replace(/\s*\(T\d\)/, '').trim();
+
+    // Construir mapa instrumento -> columna Media
+    let currentInstrument = '';
+    let mediaColByInstrument = {};
+    for (let c = 2; c <= lastCol; c++) { // columnas 2..last
+      const h1 = headersRow1[c - 1];
+      if (h1) currentInstrument = h1;
+      const h2 = headersRow2[c - 1];
+      if (h2 === 'Media' && currentInstrument) {
+        mediaColByInstrument[currentInstrument] = c;
       }
     }
-    
-    if (colInstrumento === -1) return null;
-    
-    // Buscar fila del alumno
-    const alumnos = sheetMedias.getRange(2, 1, sheetMedias.getLastRow() - 1, 1).getValues();
-    for (let row = 0; row < alumnos.length; row++) {
-      const alumnoFila = alumnos[row][0] ? alumnos[row][0].toString().trim() : '';
-      if (alumnoFila === alumno) {
-        // Leer valor
-        const valor = sheetMedias.getRange(row + 2, colInstrumento + 1).getValue();
-        const numValue = parseFloat(valor);
-        return isNaN(numValue) ? null : numValue;
-      }
+
+    const mediaCol = mediaColByInstrument[instrNombre];
+    if (!mediaCol) return null;
+
+    // Buscar fila del alumno (columna A, desde fila 3)
+    const lastRow = sheetCalif.getLastRow();
+    if (lastRow < 3) return null;
+    const alumnosVals = sheetCalif.getRange(3, 1, lastRow - 2, 1).getValues();
+    let foundRow = -1;
+    for (let i = 0; i < alumnosVals.length; i++) {
+      const name = alumnosVals[i][0] ? alumnosVals[i][0].toString().trim() : '';
+      if (name === alumno) { foundRow = 3 + i; break; }
     }
-    
-    return null;
+    if (foundRow === -1) return null;
+
+    const valor = sheetCalif.getRange(foundRow, mediaCol).getValue();
+    const numValue = parseFloat(valor);
+    return isNaN(numValue) ? null : numValue;
   } catch(e) {
-    Logger.log('buscarValorAlumnoEnHoja error: ' + e);
+    Logger.log('buscarMediaInstrumentoEnCalificaciones error: ' + e);
     return null;
   }
 }
