@@ -8,14 +8,19 @@
 
 /**
  * Crea el menú personalizado cuando se abre el spreadsheet o se activa una hoja.
- * Solo aparece cuando la hoja activa es mediasN.
+ * Detecta si es mediasN o estadísticas y crea el menú correspondiente.
  */
 function onOpen() {
   const ss = SpreadsheetApp.getActive();
   const activeSheet = ss.getActiveSheet();
   
-  if (activeSheet && activeSheet.getName().startsWith('medias')) {
-    createMediasMenu();
+  if (activeSheet) {
+    const sheetName = activeSheet.getName();
+    if (sheetName.startsWith('medias')) {
+      createMediasMenu();
+    } else if (sheetName === 'estadísticas') {
+      createEstadisticasMenu();
+    }
   }
 }
 

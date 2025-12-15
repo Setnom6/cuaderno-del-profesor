@@ -94,6 +94,13 @@ function generateTrimester(n, showAlert = true) {
   // ---------- Call observaciones constructor (build observacionesN if not exists) ----------
   const sheetObservaciones = buildObservaciones(n, alumnos);
 
+  // ---------- Build estadísticas sheet (only once after first trimester) ----------
+  if (n === 1) {
+    buildEstadisticasSheet();
+    estadisticas_populateInstrumentsList(ss.getSheetByName('estadísticas'));
+    estadisticas_populateAlumnosList(ss.getSheetByName('estadísticas'));
+  }
+
   // ------------------ Call to get links --------------
   writeLinks(n, calificacionesResult.sheetCalif, sheetMedias, sheetObservaciones);
 
