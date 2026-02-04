@@ -131,7 +131,7 @@ function runIntegrationTest_Phase2() {
   Logger.log('✓ Estructura de calificaciones1, medias1 y observaciones1 verificada\n');
   
   // Verificar enlaces en instrumentos
-  const sheetInstr = ss.getSheetByName('instrumentos');
+  // (sheetInstr ya está definida arriba)
   if (!sheetInstr) {
     throw new Error('No se encontró hoja instrumentos');
   }
