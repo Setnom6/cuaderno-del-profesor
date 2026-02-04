@@ -1,5 +1,5 @@
 /**
- * main.gs
+ * main.gs probando
  * Punto de entrada: genera/actualiza calificacionesN y mediasN para un trimestre.
  * Contiene las funciones públicas principales y wrappers.
  */
