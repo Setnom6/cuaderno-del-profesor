@@ -1,0 +1,5 @@
+{
+  "scriptId": "TU_SCRIPT_ID_PARA_TESTS",
+  "rootDir": "./src",
+  "fileExtension": "gs"
+}

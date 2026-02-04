@@ -1,5 +1,5 @@
 {
-  "scriptId": "TU_SCRIPT_ID_PERSONAL",
+  "scriptId": "SOLICITAR_AL_MAINTAINER",
   "rootDir": "./src",
   "fileExtension": "gs"
 }

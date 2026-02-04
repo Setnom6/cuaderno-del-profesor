@@ -22,11 +22,18 @@ echo "🔐 Iniciando sesión en Google..."
 echo "   Se abrirá una ventana del navegador para autorizar."
 npx clasp login
 
-# Crear .clasp-dev.json desde el ejemplo
-if [ ! -f ".clasp-dev.json" ]; then
-    cp .clasp-dev.json.example .clasp-dev.json
-    echo ""
-    echo "✅ Creado .clasp-dev.json desde el ejemplo"
+# Crear archivos de config desde ejemplos
+echo ""
+echo "📝 Creando archivos de configuración..."
+
+if [ ! -f ".clasp-dev-tests.json" ]; then
+    cp .clasp-dev-tests.json.example .clasp-dev-tests.json
+    echo "   ✓ Creado .clasp-dev-tests.json"
+fi
+
+if [ ! -f ".clasp-dev-manual.json" ]; then
+    cp .clasp-dev-manual.json.example .clasp-dev-manual.json
+    echo "   ✓ Creado .clasp-dev-manual.json"
 fi
 
 echo ""
@@ -34,14 +41,22 @@ echo "════════════════════════�
 echo "  CONFIGURACIÓN COMPLETADA"
 echo "═══════════════════════════════════════════════════════════════"
 echo ""
-echo "📝 SIGUIENTE PASO: Configura tu entorno de desarrollo personal"
+echo "📝 SIGUIENTE PASO: Configura tus entornos de desarrollo"
 echo ""
-echo "1. Crea un Google Sheet en tu Drive para pruebas"
-echo "2. Abre: Extensiones → Apps Script"
-echo "3. Copia el Script ID desde: ⚙️ Configuración del proyecto"
-echo "4. Edita .clasp-dev.json y pega tu Script ID"
+echo "Necesitas crear DOS Google Sheets en tu Drive personal:"
+echo ""
+echo "1. 📊 Sheet para TESTS AUTOMATIZADOS"
+echo "   - Abre: Extensiones → Apps Script"
+echo "   - Copia el Script ID"
+echo "   - Edita .clasp-dev-tests.json"
+echo ""
+echo "2. 📊 Sheet para PRUEBAS MANUALES"
+echo "   - Crea otro Sheet separado"
+echo "   - Copia su Script ID"
+echo "   - Edita .clasp-dev-manual.json"
 echo ""
 echo "Después podrás usar:"
-echo "  npm run dev:push   - Subir código (con tests) a tu Sheet de desarrollo"
-echo "  npm run dev:watch  - Modo watch (sube automáticamente al guardar)"
+echo "  npm run dev:push   - Sube a AMBOS entornos de desarrollo"
+echo ""
+echo "Para producción, solicita el Script ID al maintainer."
 echo ""

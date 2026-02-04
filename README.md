@@ -38,22 +38,24 @@ GitHub (código completo: src + tests)
     │
     ▼
 ┌─────────────────────────────────────────────────┐
-│     Tu Drive personal (DEV)                      │
+│     Tu Drive personal (privado)                  │
 │                                                  │
-│   📊 Sheet de pruebas    ← npm run dev:push     │
-│   └── Apps Script (código + tests)              │
+│   📊 Sheet TESTS        ← código + tests        │
+│   └── Para correr runAllTests()                 │
 │                                                  │
-│   Puedes tener varios Sheets para probar        │
-│   diferentes escenarios                         │
+│   📊 Sheet MANUAL       ← código SIN tests      │
+│   └── Para pruebas manuales con datos reales    │
 └─────────────────────────────────────────────────┘
-
+         │
+         │ npm run dev:push (sube a AMBOS)
+         │
 ┌─────────────────────────────────────────────────┐
-│     Drive compartido (PRODUCCIÓN)                │
+│     Drive de producción (solo maintainers)       │
 │                                                  │
-│   📊 PLANTILLA oficial   ← npm run prod:push    │
-│   └── Apps Script (solo código, SIN tests)      │
+│   📊 PLANTILLA oficial  ← código SIN tests      │
+│   └── Usuarios copian desde aquí                │
 │                                                  │
-│   Usuarios copian esta plantilla                │
+│   ⚠️ Script ID privado, no está en GitHub       │
 └─────────────────────────────────────────────────┘
 ```
 
@@ -67,49 +69,62 @@ chmod +x scripts/*.sh
 ./scripts/setup.sh
 ```
 
-### Configurar tu entorno personal
+### Configurar tus entornos personales
 
-1. Crea un Google Sheet en tu Drive
-2. Abre: **Extensiones → Apps Script**
-3. Copia el Script ID: **⚙️ Configuración → ID del script**
-4. Crea `.clasp-dev.json` (copiando de `.clasp-dev.json.example`):
+Crea **DOS Google Sheets** en tu Drive:
 
+#### 1. Sheet para TESTS AUTOMATIZADOS
+- Crea un Sheet vacío
+- Extensiones → Apps Script → ⚙️ → Copia Script ID
+- Edita `.clasp-dev-tests.json`:
 ```json
 {
-  "scriptId": "TU_SCRIPT_ID_PERSONAL",
-  "rootDir": "./src",
-  "fileExtension": "gs"
+  "scriptId": "TU_SCRIPT_ID_TESTS",
+  "rootDir": "./src"
 }
 ```
 
-> ⚠️ `.clasp-dev.json` es personal y está en `.gitignore`. No se sube a GitHub.
+#### 2. Sheet para PRUEBAS MANUALES
+- Crea otro Sheet con datos de prueba
+- Copia su Script ID
+- Edita `.clasp-dev-manual.json`:
+```json
+{
+  "scriptId": "TU_SCRIPT_ID_MANUAL",
+  "rootDir": "./src"
+}
+```
+
+> ⚠️ Estos archivos son personales y están en `.gitignore`. No se suben a GitHub.
 
 ### Comandos de desarrollo
 
 ```bash
-npm run dev:push      # Subir código + tests a tu Sheet
-npm run dev:watch     # Modo watch (sube al guardar)
-npm run dev:open      # Abrir Apps Script en navegador
+npm run dev:push         # Sube a AMBOS entornos de desarrollo:
+                         #   - TESTS: con tests
+                         #   - MANUAL: sin tests
+
+npm run dev:open:tests   # Abre Apps Script del Sheet de tests
+npm run dev:open:manual  # Abre Apps Script del Sheet manual
 ```
 
 ### Tests
 
-Los tests están en `src/tests/`. Para ejecutarlos:
-
 1. `npm run dev:push`
-2. Abre tu Sheet → Apps Script
+2. Abre tu Sheet de TESTS → Apps Script
 3. Ejecuta `runAllTests()`
 
 ### Publicar a producción
 
-Solo maintainers autorizados:
+Solo maintainers autorizados con el Script ID de producción:
 
 ```bash
-# Asegúrate de estar en main y sin cambios pendientes
-git status
+# Solicita el Script ID al maintainer y crea .clasp-prod.json
+cp .clasp-prod.json.example .clasp-prod.json
+# Edita con el ID real
 
-# Deploy (excluye tests automáticamente)
-npm run prod:push
+# Deploy
+./scripts/deploy.sh
 ```
 
 ---
@@ -124,17 +139,26 @@ npm run prod:push
 │   ├── medias_*.gs             # Módulo medias
 │   ├── observaciones_*.gs      # Módulo observaciones
 │   ├── estadisticas_*.gs       # Módulo estadísticas
-│   └── tests/                  # Tests (solo en DEV)
+│   └── tests/                  # Tests (solo en DEV-TESTS)
 │
 ├── scripts/
 │   ├── setup.sh                # Config inicial
 │   └── deploy.sh               # Deploy a producción
 │
-├── .clasp-dev.json.example     # Ejemplo config personal
-├── .clasp-prod.json            # Config producción (compartida)
-├── .claspignore                # Ignorados en DEV
-└── .claspignore-prod           # Ignorados en PROD (sin tests)
+├── .clasp-dev-tests.json.example    # Ejemplo config tests
+├── .clasp-dev-manual.json.example   # Ejemplo config manual
+├── .clasp-prod.json.example         # Ejemplo config producción
+├── .claspignore                     # Ignorados (incluye tests)
+└── .claspignore-prod                # Ignorados (SIN tests)
 ```
+
+### Archivos de configuración (NO en GitHub)
+
+| Archivo | Quién lo tiene | Contenido |
+|---------|---------------|-----------|
+| `.clasp-dev-tests.json` | Cada developer | Su Script ID personal (tests) |
+| `.clasp-dev-manual.json` | Cada developer | Su Script ID personal (manual) |
+| `.clasp-prod.json` | Solo maintainers | Script ID de producción |
 
 ---
 

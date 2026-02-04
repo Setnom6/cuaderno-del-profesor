@@ -4,13 +4,13 @@
   "description": "Sistema de calificaciones automatizado para Google Sheets",
   "scripts": {
     "login": "clasp login",
-    "dev:push": "cp .clasp-dev.json .clasp.json && clasp push && rm .clasp.json",
-    "dev:pull": "cp .clasp-dev.json .clasp.json && clasp pull && rm .clasp.json",
-    "dev:open": "cp .clasp-dev.json .clasp.json && clasp open && rm .clasp.json",
-    "dev:watch": "cp .clasp-dev.json .clasp.json && clasp push --watch",
-    "prod:push": "cp .claspignore-prod .claspignore && cp .clasp-prod.json .clasp.json && clasp push && rm .clasp.json && git checkout .claspignore",
-    "prod:open": "cp .clasp-prod.json .clasp.json && clasp open && rm .clasp.json",
-    "status": "echo '=== DEV ===' && cp .clasp-dev.json .clasp.json && clasp status && rm .clasp.json"
+    "dev:push": "npm run dev:tests && npm run dev:manual",
+    "dev:tests": "cp .clasp-dev-tests.json .clasp.json && clasp push && rm .clasp.json && echo '✅ DEV-TESTS actualizado (con tests)'",
+    "dev:manual": "cp .claspignore-prod .claspignore && cp .clasp-dev-manual.json .clasp.json && clasp push && rm .clasp.json && git checkout .claspignore && echo '✅ DEV-MANUAL actualizado (sin tests)'",
+    "dev:open:tests": "cp .clasp-dev-tests.json .clasp.json && clasp open && rm .clasp.json",
+    "dev:open:manual": "cp .clasp-dev-manual.json .clasp.json && clasp open && rm .clasp.json",
+    "prod:push": "cp .claspignore-prod .claspignore && cp .clasp-prod.json .clasp.json && clasp push && rm .clasp.json && git checkout .claspignore && echo '✅ PRODUCCIÓN actualizado (sin tests)'",
+    "prod:open": "cp .clasp-prod.json .clasp.json && clasp open && rm .clasp.json"
   },
   "devDependencies": {
     "@google/clasp": "^2.4.2"

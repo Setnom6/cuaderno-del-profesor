@@ -1,6 +1,8 @@
-# Config de desarrollo personal (cada dev tiene la suya)
+# Config de clasp (TODAS son privadas)
 .clasp.json
-.clasp-dev.json
+.clasp-dev-tests.json
+.clasp-dev-manual.json
+.clasp-prod.json
 
 # Credenciales locales de clasp
 .clasprc.json

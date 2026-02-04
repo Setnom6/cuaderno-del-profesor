@@ -1,11 +1,27 @@
 #!/bin/bash
 # deploy.sh - Script para desplegar a PRODUCCIÓN
-# Solo para mantainers con acceso al Script ID de producción
+# Solo para maintainers con acceso al Script ID de producción
 
 set -e
 
 echo "🚀 DEPLOY A PRODUCCIÓN"
 echo ""
+
+# Verificar que existe el archivo de config
+if [ ! -f ".clasp-prod.json" ]; then
+    echo "❌ No existe .clasp-prod.json"
+    echo ""
+    echo "Si eres maintainer, crea el archivo con el Script ID de producción."
+    echo "Si no lo eres, solicita acceso al maintainer del proyecto."
+    exit 1
+fi
+
+SCRIPT_ID=$(grep -o '"scriptId": *"[^"]*"' ".clasp-prod.json" | cut -d'"' -f4)
+if [[ "$SCRIPT_ID" == *"SOLICITAR"* ]] || [[ "$SCRIPT_ID" == *"TU_SCRIPT"* ]]; then
+    echo "❌ Configura el scriptId real en .clasp-prod.json"
+    echo "   Solicita el ID al maintainer del proyecto."
+    exit 1
+fi
 
 # Verificar que estamos en main y sin cambios pendientes
 BRANCH=$(git branch --show-current)
@@ -28,20 +44,8 @@ if [ -n "$(git status --porcelain)" ]; then
     fi
 fi
 
-# Verificar config de producción
-if [ ! -f ".clasp-prod.json" ]; then
-    echo "❌ No existe .clasp-prod.json"
-    exit 1
-fi
-
-SCRIPT_ID=$(grep -o '"scriptId": *"[^"]*"' ".clasp-prod.json" | cut -d'"' -f4)
-if [[ "$SCRIPT_ID" == *"TU_SCRIPT"* ]] || [[ "$SCRIPT_ID" == *"SCRIPT_ID"* ]]; then
-    echo "❌ Configura el scriptId real en .clasp-prod.json"
-    exit 1
-fi
-
 echo "📦 Desplegando a producción (sin tests)..."
-echo "   Script ID: ${SCRIPT_ID:0:20}..."
+echo "   Script ID: ${SCRIPT_ID:0:15}..."
 echo ""
 
 # Usar .claspignore-prod para excluir tests
