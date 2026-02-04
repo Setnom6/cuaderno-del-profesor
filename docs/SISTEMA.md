@@ -13,8 +13,9 @@ Este documento describe la estructura, funcionamiento y relaciones entre las hoj
 2. [Hojas Generadas](#2-hojas-generadas)
    - [calificacionesN](#21-calificacionesn)
    - [mediasN](#22-mediasn)
-   - [observacionesN](#23-observacionesn)
-   - [estadísticas](#24-estadísticas)
+   - [mediasContinua](#23-mediascontinua)
+   - [observacionesN](#24-observacionesn)
+   - [estadísticas](#25-estadísticas)
 3. [Flujo de Datos](#3-flujo-de-datos)
 4. [Estado de Desarrollo](#4-estado-de-desarrollo)
 
@@ -256,11 +257,31 @@ Media_CompetenciaX = AVERAGE(criterios de esa competencia)
 **Menú adicional**:
 - "Cálculo de Medias" permite cambiar a un cálculo "por competencias" donde primero se agrupan los instrumentos en su competencia correspondiente y, después, se calcula la media de competencias o "por criterios" donde se ignoran las competencias y se hace una media directa de todos los criterios.
 
-> 💡 **Propuesta de mejora - mediasContinua**: Crear una hoja adicional llamada `mediasContinua` que funcione igual que `mediasN`, pero en lugar de referenciar únicamente `calificacionesN`, busque en **todas las hojas de calificaciones existentes** (`calificaciones1`, `calificaciones2`, `calificaciones3`) para calcular una media conjunta acumulada de todo el curso. Esto permitiría ver la evolución global del alumno sin tener que esperar al final del curso.
+---
+
+### 2.3 mediasContinua
+
+**Propósito**: Muestra las medias acumuladas de todos los trimestres existentes.
+
+**Estructura**: Idéntica a `mediasN`.
+
+**Características**:
+- Calcula la media por criterio buscando en **todas** las hojas de calificaciones existentes (`calificaciones1`, `calificaciones2`, `calificaciones3`)
+- Se actualiza automáticamente cada vez que se genera cualquier trimestre
+- Permite ver la evolución global del alumno sin esperar al final del curso
+
+**Relación con otras hojas**:
+- ← Lee alumnos de `listado`
+- ← Lee criterios de `criterios`
+- ← Lee valores de `calificaciones1`, `calificaciones2`, `calificaciones3` mediante fórmulas
+
+**Creación y actualización**:
+- Se **elimina y recrea** completamente en cada ejecución de cualquier trimestre
+- Solo se crea si existe al menos una hoja de calificaciones
 
 ---
 
-### 2.3 observacionesN
+### 2.4 observacionesN
 
 **Propósito**: Registro de asistencia y observaciones cualitativas.
 
@@ -301,7 +322,7 @@ Media_CompetenciaX = AVERAGE(criterios de esa competencia)
 
 ---
 
-### 2.4 estadísticas
+### 2.5 estadísticas
 
 **Propósito**: Análisis comparativo de medias por instrumento seleccionado.
 
@@ -370,17 +391,19 @@ Marca los instrumentos con X para incluir en el análisis:
 │  (alumnos)  │     │             │     │   (notas)       │
 └─────────────┘     │             │     └────────┬────────┘
                     │             │              │
-┌─────────────┐     │ trimesterN()│              ▼
-│  criterios  │────▶│             │     ┌─────────────────┐
-│  (claves,   │     │             │────▶│    mediasN      │
-│   colores)  │     │             │     │ (promedios)     │
-└─────────────┘     │             │     └─────────────────┘
-                    │             │
-┌─────────────┐     │             │     ┌─────────────────┐
-│instrumentos │────▶│             │────▶│ observacionesN  │
-│ (nombres,   │     │             │     │ (asistencia)    │
-│  criterios) │     └─────────────┘     └─────────────────┘
-└─────────────┘
+┌─────────────┐     │ trimesterN()│              ├──────────────┐
+│  criterios  │────▶│             │              ▼              ▼
+│  (claves,   │     │             │     ┌─────────────┐  ┌──────────────┐
+│   colores)  │     │             │────▶│   mediasN   │  │mediasContinua│
+└─────────────┘     │             │     │ (promedios) │  │ (acumulado)  │
+                    │             │     └─────────────┘  └──────────────┘
+┌─────────────┐     │             │              ▲
+│instrumentos │────▶│             │     calificaciones1,2,3
+│ (nombres,   │     │             │              │
+│  criterios) │     │             │     ┌─────────────────┐
+└─────────────┘     │             │────▶│ observacionesN  │
+                    └─────────────┘     │ (asistencia)    │
+                                        └─────────────────┘
                                         ┌─────────────────┐
                     ┌──────────────────▶│  estadísticas   │
                     │                   │ (análisis)      │
@@ -398,6 +421,7 @@ Marca los instrumentos con X para incluir en el análisis:
 | **instrumentos** | ✅ Estable | Lectura por trimestre |
 | **calificacionesN** | ✅ Estable | Creación, actualización, formato, protección |
 | **mediasN** | ✅ Estable | Fórmulas, competencias, formato condicional |
+| **mediasContinua** | ✅ Estable | Media acumulada de todos los trimestres |
 | **observacionesN** | ✅ Estable | Creación, actualización incremental |
 | **estadísticas** | ✅ Funcional | Selección por X, análisis de medias |
 
@@ -406,7 +430,6 @@ Marca los instrumentos con X para incluir en el análisis:
 **Prioridad alta** (mejoras de usabilidad):
 - [ ] **Script `setup.gs` de inicialización**: Crear un script que configure todos los menús y elementos de UI del sistema (menú principal, menú de estadísticas, etc.). La plantilla vendría con esto ya ejecutado, pero los usuarios podrían re-ejecutarlo desde Apps Script si es necesario. Incluir tutorial paso a paso.
 - [ ] **Menús de criterios dinámicos**: Actualizar automáticamente los desplegables de instrumentos cuando cambien los criterios
-- [ ] **Hoja `mediasContinua`**: Media acumulada de todos los trimestres existentes
 - [ ] **Hojas opcionales**: Permitir elegir si crear `observacionesN` y `estadísticas`
 
 **Prioridad media** (funcionalidades adicionales):
@@ -433,7 +456,8 @@ src/
 │   ├── calificaciones_data.gs   # Lectura/copia de datos antiguos
 │   └── calificaciones_format.gs # Formato visual
 ├── medias/
-│   ├── medias_impl.gs           # Orquestación de medias
+│   ├── medias_impl.gs           # Orquestación de mediasN
+│   ├── medias_continua.gs       # Orquestación de mediasContinua
 │   ├── medias_data.gs           # Lectura de criterios y fórmulas
 │   ├── medias_format.gs         # Formato visual
 │   └── medias_menu.gs           # Menú de recálculo

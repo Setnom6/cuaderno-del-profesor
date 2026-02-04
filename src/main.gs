@@ -91,6 +91,9 @@ function generateTrimester(n, showAlert = true) {
   // ---------- Call medias constructor (build mediasN). It will compute columns for each clave  ----------
   sheetMedias = buildMedias(n, calificacionesResult.sheetCalif, alumnos, sheetCriteria, claveToColor);
 
+  // ---------- Call mediasContinua constructor (media acumulada de todos los trimestres) ----------
+  buildMediasContinua(alumnos, sheetCriteria, claveToColor);
+
   // ---------- Call observaciones constructor (build observacionesN if not exists) ----------
   const sheetObservaciones = buildObservaciones(n, alumnos);
 
