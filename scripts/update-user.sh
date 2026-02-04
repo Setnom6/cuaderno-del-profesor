@@ -16,6 +16,9 @@ TEMP_CLASP=".clasp-temp.json"
 
 echo "🔄 Actualizando Apps Script del usuario..."
 
+# Usar .claspignore de producción (excluye tests)
+cp .claspignore-prod .claspignore
+
 # Crear archivo temporal de configuración
 cat > "$TEMP_CLASP" << EOF
 {
@@ -27,8 +30,9 @@ EOF
 # Hacer push usando el archivo temporal
 npx clasp push --project "$TEMP_CLASP"
 
-# Eliminar archivo temporal inmediatamente
+# Eliminar archivo temporal y restaurar .claspignore
 rm -f "$TEMP_CLASP"
+git checkout .claspignore
 
-echo "✅ Actualización completada"
+echo "✅ Actualización completada (sin tests)"
 echo "🔒 El Script ID no ha sido almacenado"

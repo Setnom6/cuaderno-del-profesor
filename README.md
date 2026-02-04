@@ -2,6 +2,17 @@
 
 Sistema de evaluación basado en competencias, criterios e instrumentos para Google Sheets.
 
+> 📖 Para documentación técnica detallada del sistema, consulta [docs/SISTEMA.md](docs/SISTEMA.md)
+
+---
+
+## 📋 Índice
+
+- [Para Usuarios](#-para-usuarios)
+- [Para Desarrolladores](#-para-desarrolladores)
+- [Comandos npm](#-comandos-npm)
+- [Estructura del proyecto](#-estructura-del-proyecto)
+
 ---
 
 ## 📋 Para Usuarios
@@ -12,20 +23,33 @@ Sistema de evaluación basado en competencias, criterios e instrumentos para Goo
 2. Clic en **"Usar plantilla"** o **Archivo → Hacer una copia**
 3. Se creará una copia en tu Drive con todo el código incluido
 
-### Uso básico
+### Configuración inicial
 
-1. Completa las hojas: `listado`, `criterios`, `instrumentos`
-2. Ejecuta desde el menú: **Cuaderno → Generar Trimestre 1**
-3. Para estadísticas: marca instrumentos con X y usa **Estadísticas → Generar Análisis**
+Completa estas 3 hojas antes de generar calificaciones:
+
+| Hoja | Qué hacer |
+|------|-----------|
+| `listado` | Nombre, Apellido1, Apellido2 de cada alumno |
+| `criterios` | Claves de criterios con colores por competencia |
+| `instrumentos` | Nombres de instrumentos y criterios asociados por trimestre |
+
+### Uso
+
+1. Pulsa el botón **"Actualizar T1"** (o T2, T3) en la hoja `instrumentos`
+2. Se generarán: `calificaciones1`, `medias1`, `observaciones1`
+3. Introduce las notas en `calificaciones1`
+4. Para análisis: marca instrumentos con X en `estadísticas` y ejecuta **Estadísticas → Generar Análisis**
 
 ### Hojas generadas
 
 | Hoja | Descripción |
 |------|-------------|
-| `calificacionesN` | Desglose de calificaciones por instrumento |
-| `mediasN` | Promedios por competencias y criterios |
-| `observacionesN` | Observaciones sobre los alumnos |
-| `estadísticas` | Media de instrumentos seleccionados |
+| `calificacionesN` | Notas por instrumento y criterio, con media por instrumento |
+| `mediasN` | Medias por criterio y por competencia |
+| `observacionesN` | Faltas, retrasos y observaciones de alumnos |
+| `estadísticas` | Análisis comparativo de instrumentos seleccionados |
+
+> 📖 Más detalles sobre cada hoja en [docs/SISTEMA.md](docs/SISTEMA.md)
 
 ---
 
@@ -130,13 +154,35 @@ npm run dev:open:manual  # Abre Apps Script del Sheet manual
 Solo maintainers autorizados con el Script ID de producción:
 
 ```bash
-# Solicita el Script ID al maintainer y crea .clasp-prod.json
-cp .clasp-prod.json.example .clasp-prod.json
-# Edita con el ID real
-
-# Deploy
-./scripts/deploy.sh
+npm run prod:push        # Sube código a la plantilla oficial
+npm run prod:open        # Abre Apps Script de producción
 ```
+
+### Actualizar usuarios
+
+Para actualizar el Apps Script de un usuario específico (sin guardar su ID):
+
+```bash
+npm run update:user <SCRIPT_ID>
+```
+
+El ID se pasa como argumento y no se almacena en ningún archivo.
+
+---
+
+## 🛠️ Comandos npm
+
+| Comando | Descripción |
+|---------|-------------|
+| `npm run login` | Autenticarse con clasp en Google |
+| `npm run dev:push` | Subir código a ambos entornos DEV |
+| `npm run dev:tests` | Subir solo a DEV-TESTS (con tests) |
+| `npm run dev:manual` | Subir solo a DEV-MANUAL (sin tests) |
+| `npm run dev:open:tests` | Abrir Apps Script de DEV-TESTS |
+| `npm run dev:open:manual` | Abrir Apps Script de DEV-MANUAL |
+| `npm run prod:push` | Subir a producción (sin tests) |
+| `npm run prod:open` | Abrir Apps Script de producción |
+| `npm run update:user <ID>` | Actualizar Apps Script de un usuario |
 
 ---
 
@@ -144,26 +190,43 @@ cp .clasp-prod.json.example .clasp-prod.json
 
 ```
 ├── src/
-│   ├── main.gs                 # Punto de entrada
-│   ├── utils.gs                # Utilidades
-│   ├── calificaciones_*.gs     # Módulo calificaciones
-│   ├── medias_*.gs             # Módulo medias
-│   ├── observaciones_*.gs      # Módulo observaciones
-│   ├── estadisticas_*.gs       # Módulo estadísticas
-│   └── tests/                  # Tests (solo en DEV-TESTS)
+│   ├── main.gs                 # Punto de entrada, trimester1/2/3()
+│   ├── utils.gs                # Funciones auxiliares compartidas
+│   ├── calificaciones/         # Módulo de calificaciones
+│   │   ├── calificaciones_impl.gs
+│   │   ├── calificaciones_data.gs
+│   │   └── calificaciones_format.gs
+│   ├── medias/                 # Módulo de medias
+│   │   ├── medias_impl.gs
+│   │   ├── medias_data.gs
+│   │   ├── medias_format.gs
+│   │   └── medias_menu.gs
+│   ├── observaciones/          # Módulo de observaciones
+│   │   ├── observaciones_impl.gs
+│   │   ├── observaciones_data.gs
+│   │   └── observaciones_format.gs
+│   ├── estadisticas/           # Módulo de estadísticas
+│   │   ├── estadisticas_impl.gs
+│   │   ├── estadisticas_panel.gs
+│   │   ├── estadisticas_analyze.gs
+│   │   ├── estadisticas_format.gs
+│   │   └── estadisticas_menu.gs
+│   ├── tests/                  # Tests (solo en DEV-TESTS)
+│   └── appsscript.json         # Manifest de Apps Script
 │
 ├── scripts/
-│   ├── setup.sh                # Config inicial
-│   └── deploy.sh               # Deploy a producción
+│   ├── setup.sh                # Configuración inicial
+│   └── update-user.sh          # Actualizar usuario por ID
 │
-├── .clasp-dev-tests.json.example    # Ejemplo config tests
-├── .clasp-dev-manual.json.example   # Ejemplo config manual
-├── .clasp-prod.json.example         # Ejemplo config producción
-├── .claspignore                     # Ignorados (incluye tests)
-└── .claspignore-prod                # Ignorados (SIN tests)
+├── docs/
+│   └── SISTEMA.md              # Documentación técnica del sistema
+│
+├── .clasp-*.json.example       # Ejemplos de configuración clasp
+├── .claspignore                # Archivos ignorados por clasp
+└── .claspignore-prod           # Ignorados en producción (excluye tests)
 ```
 
-### Archivos de configuración (NO en GitHub)
+### Archivos de configuración (privados, en .gitignore)
 
 | Archivo | Quién lo tiene | Contenido |
 |---------|---------------|-----------|
