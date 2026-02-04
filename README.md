@@ -69,6 +69,17 @@ chmod +x scripts/*.sh
 ./scripts/setup.sh
 ```
 
+> ⚠️ **Requisito**: Node.js 18+ (clasp no funciona con versiones anteriores)
+> 
+> Para actualizar Node.js:
+> ```bash
+> # Usando nvm (recomendado)
+> curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+> source ~/.bashrc
+> nvm install 20
+> nvm use 20
+> ```
+
 ### Configurar tus entornos personales
 
 Crea **DOS Google Sheets** en tu Drive:

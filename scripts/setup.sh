@@ -12,6 +12,30 @@ if ! command -v npm &> /dev/null; then
     exit 1
 fi
 
+# Verificar versión de Node (requiere 18+)
+NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
+if [ "$NODE_VERSION" -lt 18 ]; then
+    echo "❌ Node.js versión $(node -v) no es compatible."
+    echo "   clasp requiere Node.js 18 o superior."
+    echo ""
+    echo "Para actualizar Node.js en Ubuntu/Debian:"
+    echo ""
+    echo "   # Opción 1: Usando nvm (recomendado)"
+    echo "   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash"
+    echo "   source ~/.bashrc"
+    echo "   nvm install 20"
+    echo "   nvm use 20"
+    echo ""
+    echo "   # Opción 2: Usando NodeSource"
+    echo "   curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -"
+    echo "   sudo apt-get install -y nodejs"
+    echo ""
+    exit 1
+fi
+
+echo "✓ Node.js $(node -v) detectado"
+echo ""
+
 # Instalar dependencias
 echo "📦 Instalando dependencias..."
 npm install
