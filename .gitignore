@@ -1,0 +1,21 @@
+# Archivos clasp (contienen IDs privados)
+.clasp.json
+.clasp-dev.json
+.clasp-prod.json
+
+# Credenciales
+.clasprc.json
+creds.json
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

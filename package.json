@@ -1,0 +1,24 @@
+{
+  "name": "cuaderno-del-profesor",
+  "version": "1.0.0",
+  "description": "Sistema de calificaciones automatizado para Google Sheets",
+  "scripts": {
+    "login": "clasp login",
+    "dev:push": "cp .clasp-dev.json .clasp.json && clasp push && rm .clasp.json",
+    "dev:pull": "cp .clasp-dev.json .clasp.json && clasp pull && rm .clasp.json",
+    "dev:open": "cp .clasp-dev.json .clasp.json && clasp open && rm .clasp.json",
+    "prod:push": "cp .clasp-prod.json .clasp.json && clasp push && rm .clasp.json",
+    "prod:pull": "cp .clasp-prod.json .clasp.json && clasp pull && rm .clasp.json",
+    "prod:open": "cp .clasp-prod.json .clasp.json && clasp open && rm .clasp.json",
+    "status": "echo '=== DEV ===' && cp .clasp-dev.json .clasp.json && clasp status && rm .clasp.json"
+  },
+  "devDependencies": {
+    "@google/clasp": "^2.4.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Setnom6/cuaderno-del-profesor.git"
+  },
+  "author": "Setnom6",
+  "license": "MIT"
+}

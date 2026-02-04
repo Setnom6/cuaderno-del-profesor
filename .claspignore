@@ -1,0 +1,14 @@
+# Ignorar archivos que no deben subirse a Apps Script
+**/.git/**
+**/node_modules/**
+.clasp-dev.json
+.clasp-prod.json
+.claspignore
+.gitignore
+*.md
+*.pdf
+LICENSE
+package.json
+package-lock.json
+scripts/**
+tests/**
