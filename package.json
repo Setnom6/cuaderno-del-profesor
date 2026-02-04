@@ -10,7 +10,8 @@
     "dev:open:tests": "cp .clasp-dev-tests.json .clasp.json && clasp open && rm .clasp.json",
     "dev:open:manual": "cp .clasp-dev-manual.json .clasp.json && clasp open && rm .clasp.json",
     "prod:push": "cp .claspignore-prod .claspignore && cp .clasp-prod.json .clasp.json && clasp push && rm .clasp.json && git checkout .claspignore && echo '✅ PRODUCCIÓN actualizado (sin tests)'",
-    "prod:open": "cp .clasp-prod.json .clasp.json && clasp open && rm .clasp.json"
+    "prod:open": "cp .clasp-prod.json .clasp.json && clasp open && rm .clasp.json",
+    "update:user": "scripts/update-user.sh"
   },
   "devDependencies": {
     "@google/clasp": "^2.4.2"
