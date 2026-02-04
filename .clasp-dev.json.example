@@ -1,0 +1,5 @@
+{
+  "scriptId": "TU_SCRIPT_ID_PERSONAL",
+  "rootDir": "./src",
+  "fileExtension": "gs"
+}

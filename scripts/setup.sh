@@ -1,9 +1,9 @@
 #!/bin/bash
-# setup.sh - Configura clasp y los entornos
+# setup.sh - Configura el entorno de desarrollo personal
 
 set -e
 
-echo "🔧 Configuración inicial de clasp"
+echo "🔧 Configuración del entorno de desarrollo"
 echo ""
 
 # Verificar node/npm
@@ -22,23 +22,26 @@ echo "🔐 Iniciando sesión en Google..."
 echo "   Se abrirá una ventana del navegador para autorizar."
 npx clasp login
 
+# Crear .clasp-dev.json desde el ejemplo
+if [ ! -f ".clasp-dev.json" ]; then
+    cp .clasp-dev.json.example .clasp-dev.json
+    echo ""
+    echo "✅ Creado .clasp-dev.json desde el ejemplo"
+fi
+
 echo ""
-echo "✅ Configuración básica completada."
+echo "═══════════════════════════════════════════════════════════════"
+echo "  CONFIGURACIÓN COMPLETADA"
+echo "═══════════════════════════════════════════════════════════════"
 echo ""
-echo "📝 Ahora necesitas configurar los Script IDs:"
+echo "📝 SIGUIENTE PASO: Configura tu entorno de desarrollo personal"
 echo ""
-echo "1. DESARROLLO (pruebas):"
-echo "   - Abre tu Google Sheet de desarrollo"
-echo "   - Ve a Extensiones > Apps Script"
-echo "   - Clic en ⚙️ Configuración del proyecto"
-echo "   - Copia el 'ID del script'"
-echo "   - Edita .clasp-dev.json y pega el ID"
-echo ""
-echo "2. PRODUCCIÓN (plantilla usuarios):"
-echo "   - Crea una copia de tu Sheet como plantilla"
-echo "   - Abre su Apps Script y copia el Script ID"
-echo "   - Edita .clasp-prod.json y pega el ID"
+echo "1. Crea un Google Sheet en tu Drive para pruebas"
+echo "2. Abre: Extensiones → Apps Script"
+echo "3. Copia el Script ID desde: ⚙️ Configuración del proyecto"
+echo "4. Edita .clasp-dev.json y pega tu Script ID"
 echo ""
 echo "Después podrás usar:"
-echo "  npm run dev:push   - Subir código a desarrollo"
-echo "  npm run prod:push  - Subir código a producción"
+echo "  npm run dev:push   - Subir código (con tests) a tu Sheet de desarrollo"
+echo "  npm run dev:watch  - Modo watch (sube automáticamente al guardar)"
+echo ""

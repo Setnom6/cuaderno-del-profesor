@@ -1,0 +1,25 @@
+{
+  "scriptId": "1abc123_SCRIPT_ID_PRODUCCION_REAL",
+  "rootDir": "./src",
+  "fileExtension": "gs",
+  "filePushOrder": [
+    "appsscript.json",
+    "utils.gs",
+    "main.gs",
+    "calificaciones_data.gs",
+    "calificaciones_format.gs",
+    "calificaciones_impl.gs",
+    "medias_data.gs",
+    "medias_format.gs",
+    "medias_impl.gs",
+    "medias_menu.gs",
+    "observaciones_data.gs",
+    "observaciones_format.gs",
+    "observaciones_impl.gs",
+    "estadisticas_analyze.gs",
+    "estadisticas_format.gs",
+    "estadisticas_impl.gs",
+    "estadisticas_menu.gs",
+    "estadisticas_panel.gs"
+  ]
+}

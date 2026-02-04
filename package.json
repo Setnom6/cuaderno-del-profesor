@@ -7,8 +7,8 @@
     "dev:push": "cp .clasp-dev.json .clasp.json && clasp push && rm .clasp.json",
     "dev:pull": "cp .clasp-dev.json .clasp.json && clasp pull && rm .clasp.json",
     "dev:open": "cp .clasp-dev.json .clasp.json && clasp open && rm .clasp.json",
-    "prod:push": "cp .clasp-prod.json .clasp.json && clasp push && rm .clasp.json",
-    "prod:pull": "cp .clasp-prod.json .clasp.json && clasp pull && rm .clasp.json",
+    "dev:watch": "cp .clasp-dev.json .clasp.json && clasp push --watch",
+    "prod:push": "cp .claspignore-prod .claspignore && cp .clasp-prod.json .clasp.json && clasp push && rm .clasp.json && git checkout .claspignore",
     "prod:open": "cp .clasp-prod.json .clasp.json && clasp open && rm .clasp.json",
     "status": "echo '=== DEV ===' && cp .clasp-dev.json .clasp.json && clasp status && rm .clasp.json"
   },

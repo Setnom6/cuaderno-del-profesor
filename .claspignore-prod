@@ -1,4 +1,4 @@
-# Ignorar archivos que no deben subirse a Apps Script
+# Ignorar para PRODUCCIÓN (excluye tests)
 **/.git/**
 **/node_modules/**
 .clasp*.json
@@ -12,3 +12,7 @@ LICENSE
 package.json
 package-lock.json
 scripts/**
+
+# Excluir tests de producción
+**/tests/**
+test_*.gs
