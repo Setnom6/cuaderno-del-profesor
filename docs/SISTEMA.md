@@ -123,7 +123,18 @@ Para seleccionar los criterios sin errores, se recomienda usar menús desplegabl
 
 **Botones de actualización**:
 
-Actualmente los botones para ejecutar `trimester1()`, `trimester2()` y `trimester3()` deben crearse manualmente:
+Los botones para ejecutar `trimester1()`, `trimester2()` y `trimester3()` se pueden crear de dos formas:
+
+**Opción A: Menú automático (recomendado)**
+
+El sistema incluye un menú **📊 Generar Trimestre** que aparece automáticamente al abrir el documento. Este menú contiene las opciones para generar cada trimestre.
+
+Si el menú no aparece:
+1. Ir a **Extensiones → Apps Script**
+2. Ejecutar la función `createMenus()`
+3. Volver a la hoja de cálculo
+
+**Opción B: Botones manuales con imágenes**
 
 1. Insertar una imagen (Insertar → Imagen → Imagen en la celda o sobre las celdas)
 2. Usar una imagen ovalada o con forma de botón
@@ -131,37 +142,9 @@ Actualmente los botones para ejecutar `trimester1()`, `trimester2()` y `trimeste
 4. Escribir el nombre de la función: `trimester1`, `trimester2` o `trimester3`
 5. Posicionar en la columna H de la hoja instrumentos
 
-> 💡 **Propuesta de mejora**: Reemplazar los botones manuales por un **menú desplegable en la barra de menús** de Google Sheets. 
->
-> **Enfoque recomendado - Script de inicialización `setup.gs`**:
-> 
-> En lugar de depender de triggers `onOpen` (que pueden no funcionar consistentemente), crear un script `setup.gs` que configure todos los menús y elementos de UI del sistema de una sola vez:
->
-> ```javascript
-> function setupSistema() {
->   // Crear menú principal
->   // Crear menú de estadísticas
->   // Configurar triggers necesarios
-> }
-> ```
->
-> **Flujo de uso**:
-> 1. **Plantilla**: Ya viene con `setupSistema()` ejecutado, lista para usar
-> 2. **Usuarios avanzados**: Si necesitan reconfigurar, pueden ir a **Extensiones → Apps Script** y ejecutar `setupSistema()` manualmente
-> 3. **Tutorial**: Documentar el proceso paso a paso para usuarios que necesiten ejecutarlo
->
-> **Ventajas**:
-> - No depende de triggers automáticos poco fiables
-> - El usuario tiene control total sobre cuándo se ejecuta
-> - La plantilla funciona "out of the box"
-> - Permite regenerar los menús si algo falla
->
-> El menú aparecería como "📊 Calificaciones" con opciones "Generar Trimestre 1", "Generar Trimestre 2", etc.
-
 **Acciones manuales**:
 - ✅ Definir nombres de instrumentos por trimestre
 - ✅ Asignar criterios a cada instrumento (separados por coma)
-- ✅ Crear botones de actualización (imagen + asignar script) o usar menú si está implementado
 - ✅ Reconfigurar menús desplegables si se modifican los criterios
 - ❌ NO modificar la columna K (enlaces automáticos)
 
@@ -255,7 +238,9 @@ Media_CompetenciaX = AVERAGE(criterios de esa competencia)
 - Toda la hoja protegida con advertencia (solo lectura recomendada)
 
 **Menú adicional**:
-- "Cálculo de Medias" permite cambiar a un cálculo "por competencias" donde primero se agrupan los instrumentos en su competencia correspondiente y, después, se calcula la media de competencias o "por criterios" donde se ignoran las competencias y se hace una media directa de todos los criterios.
+- **📉 Cálculo de Medias**: Aparece en la barra de menús. Solo funciona cuando se está en una hoja `mediasN` o `mediasContinua`. Permite cambiar entre:
+  - "Media por competencias": Agrupa criterios por competencia, calcula media de cada competencia, luego promedia las competencias
+  - "Media por criterios": Ignora las competencias y hace media directa de todos los criterios
 
 ---
 
@@ -363,23 +348,8 @@ Marca los instrumentos con X para incluir en el análisis:
 
 **Uso**:
 1. Marcar instrumentos con "X" en columna B
-2. Menú "Estadísticas → Generar Análisis"
+2. Menú **📈 Estadísticas → Generar Análisis** (solo funciona estando en la hoja `estadísticas`)
 3. La tabla aparece debajo de la lista
-
-> ⚠️ **Limitación actual**: El menú "Estadísticas → Generar Análisis" **no se crea automáticamente**. Actualmente requiere implementación manual del menú o usar el editor de scripts para ejecutar la función directamente.
-
-> 💡 **Propuestas de mejora**:
-> 
-> **1. Hoja opcional**: Al igual que `observacionesN`, convertir `estadísticas` en una hoja opcional que el usuario pueda elegir crear o no.
->
-> **2. Menú automático**: Implementar la creación automática del menú "Estadísticas" mediante:
->    - Un trigger `onOpen` que añada el menú al abrir el documento
->    - Integración con el menú principal del sistema (si se implementa)
->
-> **3. Mejora de diseño**: Rediseñar la interfaz de estadísticas para:
->    - Usar checkboxes nativos en lugar de "X" manual
->    - Añadir botón de "Generar" dentro de la propia hoja
->    - Incluir gráficos automáticos de los resultados
 
 ---
 
@@ -428,7 +398,6 @@ Marca los instrumentos con X para incluir en el análisis:
 ### Posibles mejoras futuras
 
 **Prioridad alta** (mejoras de usabilidad):
-- [ ] **Script `setup.gs` de inicialización**: Crear un script que configure todos los menús y elementos de UI del sistema (menú principal, menú de estadísticas, etc.). La plantilla vendría con esto ya ejecutado, pero los usuarios podrían re-ejecutarlo desde Apps Script si es necesario. Incluir tutorial paso a paso.
 - [ ] **Menús de criterios dinámicos**: Actualizar automáticamente los desplegables de instrumentos cuando cambien los criterios
 - [ ] **Hojas opcionales**: Permitir elegir si crear `observacionesN` y `estadísticas`
 
@@ -450,6 +419,7 @@ Marca los instrumentos con X para incluir en el análisis:
 ```
 src/
 ├── main.gs                      # Punto de entrada, trimester1/2/3()
+├── setup.gs                     # Gestión centralizada de menús (createMenus)
 ├── utils.gs                     # Funciones auxiliares compartidas
 ├── calificaciones/
 │   ├── calificaciones_impl.gs   # Orquestación de calificaciones
@@ -460,7 +430,7 @@ src/
 │   ├── medias_continua.gs       # Orquestación de mediasContinua
 │   ├── medias_data.gs           # Lectura de criterios y fórmulas
 │   ├── medias_format.gs         # Formato visual
-│   └── medias_menu.gs           # Menú de recálculo
+│   └── medias_menu.gs           # Funciones de cambio de fórmulas
 ├── observaciones/
 │   ├── observaciones_impl.gs    # Orquestación de observaciones
 │   ├── observaciones_data.gs    # Actualización de alumnos
@@ -470,7 +440,24 @@ src/
 │   ├── estadisticas_panel.gs    # Panel de selección
 │   ├── estadisticas_analyze.gs  # Generación de análisis
 │   ├── estadisticas_format.gs   # Formato visual
-│   └── estadisticas_menu.gs     # Menú de análisis
+│   └── estadisticas_menu.gs     # (vacío, menú en setup.gs)
 └── tests/
-    └── ...                      # Tests automatizados
+    ├── test_runner.gs           # Suite maestra de tests
+    ├── test_setup.gs            # Tests del sistema de menús
+    └── ...                      # Otros tests
 ```
+
+### Sistema de Menús
+
+El sistema incluye tres menús que se crean automáticamente al abrir el documento:
+
+| Menú | Funcionalidad | Restricción |
+|------|---------------|-------------|
+| **📊 Generar Trimestre** | Generar T1, T2, T3 | Ninguna (siempre funciona) |
+| **📉 Cálculo de Medias** | Cambiar fórmula de Media Final | Solo en hojas `mediasN` / `mediasContinua` |
+| **📈 Estadísticas** | Generar análisis | Solo en hoja `estadísticas` |
+
+Si los menús no aparecen:
+1. Ir a **Extensiones → Apps Script**
+2. Ejecutar la función `createMenus()`
+3. Volver a la hoja de cálculo

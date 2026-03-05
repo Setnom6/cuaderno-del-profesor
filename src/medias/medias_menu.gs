@@ -1,80 +1,12 @@
 /**
  * medias_menu.gs
- * Gestión del menú personalizado para hojas mediasN.
+ * Funciones de cálculo de medias para el menú.
  * Permite alternar entre dos modos de cálculo de Media Final:
  * - Media por competencias (default): promedia las medias de competencias
  * - Media por criterios: promedia directamente todos los criterios
+ * 
+ * NOTA: La creación del menú se gestiona en setup.gs (createMenus)
  */
-
-/**
- * Crea el menú personalizado cuando se abre el spreadsheet o se activa una hoja.
- * Detecta si es mediasN o estadísticas y crea el menú correspondiente.
- */
-function onOpen() {
-  const ss = SpreadsheetApp.getActive();
-  const activeSheet = ss.getActiveSheet();
-  
-  if (activeSheet) {
-    const sheetName = activeSheet.getName();
-    if (sheetName.startsWith('medias')) {
-      createMediasMenu();
-    } else if (sheetName === 'estadísticas') {
-      createEstadisticasMenu();
-    }
-  }
-}
-
-/**
- * Crea el menú "Cálculo de Medias" con las opciones de fórmula.
- * Indica con checkmarks qué modo está activo actualmente.
- */
-function createMediasMenu() {
-  const ui = SpreadsheetApp.getUi();
-  const ss = SpreadsheetApp.getActive();
-  const sheet = ss.getActiveSheet();
-  
-  // Detectar modo activo
-  let modoActivo = 'competencias'; // default
-  if (sheet && sheet.getName().startsWith('medias')) {
-    const numAlumnos = sheet.getLastRow() - 1;
-    if (numAlumnos > 0) {
-      const formula = sheet.getRange(2, 2).getFormula();
-      if (formula) {
-        // Detectar si es modo criterios: la fórmula debe referenciar rango C:X (solo criterios)
-        // Modo competencias: la fórmula referencia columnas más allá de criterios
-        const headerRow = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-        
-        // Contar criterios (hasta encontrar primera competencia con formato "i - nombre")
-        let numCriterios = 0;
-        for (let col = 3; col <= headerRow.length; col++) {
-          const header = headerRow[col - 1];
-          if (!header) break;
-          if (header.toString().match(/^\d+\s*-\s*.+/)) break; // Es competencia
-          numCriterios++;
-        }
-        
-        // La última columna de criterios
-        const lastCriterioCol = 2 + numCriterios;
-        const lastCriterioLetter = columnToLetter(lastCriterioCol);
-        
-        // Si la fórmula contiene el rango completo C:lastCriterio, es modo criterios
-        // Si va más allá (columnas de competencias), es modo competencias
-        const rangePattern = new RegExp('C\\d+:' + lastCriterioLetter + '\\d+');
-        if (rangePattern.test(formula)) {
-          modoActivo = 'criterios';
-        }
-      }
-    }
-  }
-  
-  const checkComp = modoActivo === 'competencias' ? '✓ ' : '';
-  const checkCrit = modoActivo === 'criterios' ? '✓ ' : '';
-  
-  ui.createMenu('Cálculo de Medias')
-    .addItem(checkComp + 'Media por competencias', 'medias_setFormulaCompetencias')
-    .addItem(checkCrit + 'Media por criterios', 'medias_setFormulaCriterios')
-    .addToUi();
-}
 
 /**
  * Establece la fórmula de Media Final como promedio de competencias (modo default).
@@ -139,16 +71,6 @@ function medias_setFormulaCompetencias(silent) {
   
   if (!silent) {
     SpreadsheetApp.getUi().alert('✓ Fórmulas actualizadas: Media Final = promedio de competencias');
-    // Recrear menú para actualizar checkmark
-    sheet.activate();
-    SpreadsheetApp.flush();
-    Utilities.sleep(100); // Pequeño delay para asegurar actualización
-    createMediasMenu();
-  } else {
-    // En tests, recrear inmediatamente
-    sheet.activate();
-    SpreadsheetApp.flush();
-    createMediasMenu();
   }
 }
 
@@ -198,16 +120,6 @@ function medias_setFormulaCriterios(silent) {
   
   if (!silent) {
     SpreadsheetApp.getUi().alert('✓ Fórmulas actualizadas: Media Final = promedio directo de criterios');
-    // Recrear menú para actualizar checkmark
-    sheet.activate();
-    SpreadsheetApp.flush();
-    Utilities.sleep(100); // Pequeño delay para asegurar actualización
-    createMediasMenu();
-  } else {
-    // En tests, recrear inmediatamente
-    sheet.activate();
-    SpreadsheetApp.flush();
-    createMediasMenu();
   }
 }
 

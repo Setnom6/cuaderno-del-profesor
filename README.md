@@ -35,17 +35,20 @@ Completa estas 3 hojas antes de generar calificaciones:
 
 ### Uso
 
-1. Pulsa el botón **"Actualizar T1"** (o T2, T3) en la hoja `instrumentos`
-2. Se generarán: `calificaciones1`, `medias1`, `observaciones1`
+1. Usa el menú **📊 Generar Trimestre → Trimestre 1** (o T2, T3)
+2. Se generarán: `calificaciones1`, `medias1`, `mediasContinua`, `observaciones1`, `estadísticas`
 3. Introduce las notas en `calificaciones1`
-4. Para análisis: marca instrumentos con X en `estadísticas` y ejecuta **Estadísticas → Generar Análisis**
+4. Para análisis: marca instrumentos con X en `estadísticas` y usa **📈 Estadísticas → Generar Análisis**
+
+> ⚠️ Si los menús no aparecen: **Extensiones → Apps Script → ejecutar `createMenus()`**
 
 ### Hojas generadas
 
 | Hoja | Descripción |
 |------|-------------|
 | `calificacionesN` | Notas por instrumento y criterio, con media por instrumento |
-| `mediasN` | Medias por criterio y por competencia |
+| `mediasN` | Medias por criterio y por competencia (trimestre N) |
+| `mediasContinua` | Medias acumuladas de todos los trimestres |
 | `observacionesN` | Faltas, retrasos y observaciones de alumnos |
 | `estadísticas` | Análisis comparativo de instrumentos seleccionados |
 
@@ -191,6 +194,7 @@ El ID se pasa como argumento y no se almacena en ningún archivo.
 ```
 ├── src/
 │   ├── main.gs                 # Punto de entrada, trimester1/2/3()
+│   ├── setup.gs                # Gestión de menús (createMenus, onOpen)
 │   ├── utils.gs                # Funciones auxiliares compartidas
 │   ├── calificaciones/         # Módulo de calificaciones
 │   │   ├── calificaciones_impl.gs
@@ -198,6 +202,7 @@ El ID se pasa como argumento y no se almacena en ningún archivo.
 │   │   └── calificaciones_format.gs
 │   ├── medias/                 # Módulo de medias
 │   │   ├── medias_impl.gs
+│   │   ├── medias_continua.gs
 │   │   ├── medias_data.gs
 │   │   ├── medias_format.gs
 │   │   └── medias_menu.gs
@@ -212,6 +217,9 @@ El ID se pasa como argumento y no se almacena en ningún archivo.
 │   │   ├── estadisticas_format.gs
 │   │   └── estadisticas_menu.gs
 │   ├── tests/                  # Tests (solo en DEV-TESTS)
+│   │   ├── test_runner.gs
+│   │   ├── test_setup.gs
+│   │   └── ...
 │   └── appsscript.json         # Manifest de Apps Script
 │
 ├── scripts/

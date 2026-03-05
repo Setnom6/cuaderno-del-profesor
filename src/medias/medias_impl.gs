@@ -183,9 +183,8 @@ function buildMediasImpl(n, sheetCalif, alumnos, sheetCriteria, claveToColor) {
     medias_protectSheet(sheetMedias, numRows, totalHeaders);
   }
   
-  // Activar la hoja medias y crear menú
+  // Activar la hoja medias
   sheetMedias.activate();
-  createMediasMenu();
 
   return sheetMedias;
 }
