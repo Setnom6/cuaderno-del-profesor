@@ -8,6 +8,9 @@
 .clasprc.json
 creds.json
 
+# TODO local (no subir a GitHub)
+TODO.md
+
 # Node
 node_modules/
 

@@ -401,8 +401,8 @@ Marca los instrumentos con X para incluir en el análisis:
 
 **Prioridad alta** (mejoras de usabilidad):
 - [ ] **Menús de criterios dinámicos**: Actualizar automáticamente los desplegables de instrumentos cuando cambien los criterios
-- [x] ~~**Hojas opcionales**: Permitir elegir si crear `observacionesN`, `mediasContinua` y `estadísticas`~~ ✅ Implementado via menú "⚙️ Opciones de creación"
 - [ ] **Logs y barras de progreso**: Incluir feedback visual durante la ejecución de comandos (toasts, spinners, logs en tiempo real)
+- [ ] **Tests de integración automatizados**: Ver [Propuesta de Tests de Integración](#propuesta-tests-de-integración-automatizados)
 
 **Prioridad media** (funcionalidades adicionales):
 - [ ] Exportación a PDF/informe
@@ -465,3 +465,135 @@ Si los menús no aparecen:
 1. Ir a **Extensiones → Apps Script**
 2. Ejecutar la función `createMenus()`
 3. Volver a la hoja de cálculo
+
+---
+
+## Propuesta: Tests de Integración Automatizados
+
+### Estado Actual
+
+Los tests de integración actuales (`test_integration.gs`) son **interactivos** y requieren intervención manual:
+
+| Fase | Tipo | Descripción |
+|------|------|-------------|
+| Phase1 | Manual | Usuario configura hojas listado, criterios, instrumentos |
+| Phase2 | Semiautomático | Genera trimestre, usuario introduce notas y modifica estructura |
+| Phase2b | Automático | Prueba cambio de fórmulas (opcional) |
+| Phase3 | Automático | Regenera y verifica preservación |
+
+**Problemas:**
+- Requieren ~15-20 minutos de intervención manual
+- No se pueden ejecutar en CI/CD
+- Difíciles de reproducir exactamente igual cada vez
+- No cubren las nuevas funcionalidades (opciones de creación, mediasContinua, etc.)
+
+### Propuesta de Mejora
+
+#### Objetivo
+Crear tests de integración **completamente automatizados** que:
+1. Configuren su propio estado inicial (setup fixtures)
+2. Ejecuten las operaciones del sistema
+3. Verifiquen resultados
+4. Limpien el estado al finalizar (teardown)
+
+#### Arquitectura Propuesta
+
+```
+tests/
+├── test_runner.gs                  # Suite maestra
+├── test_integration.gs             # Tests interactivos actuales (deprecar)
+├── integration/
+│   ├── integration_runner.gs       # Orquestador de tests de integración
+│   ├── integration_fixtures.gs     # Setup: crear datos de prueba
+│   ├── integration_teardown.gs     # Cleanup: eliminar hojas de prueba
+│   ├── integration_trimester.gs    # Tests de generación de trimestres
+│   ├── integration_update.gs       # Tests de actualización/preservación
+│   ├── integration_options.gs      # Tests de opciones de creación
+│   ├── integration_menus.gs        # Tests de menús y fórmulas
+│   └── integration_assertions.gs   # Funciones de verificación reutilizables
+```
+
+#### Plan de Desarrollo
+
+**Fase 1: Infraestructura** (1-2 horas)
+- [ ] Crear `integration_fixtures.gs` con funciones para:
+  - `createTestListado(alumnos)` - Crear hoja listado con datos
+  - `createTestCriterios(criterios)` - Crear hoja criterios con colores
+  - `createTestInstrumentos(instrumentos)` - Crear hoja instrumentos
+  - `clearGeneratedSheets()` - Eliminar calificacionesN, mediasN, etc.
+- [ ] Crear `integration_teardown.gs`:
+  - `restoreOriginalState()` - Restaurar hojas originales
+  - `deleteTestSheets()` - Eliminar todas las hojas de prueba
+- [ ] Crear `integration_assertions.gs`:
+  - Migrar funciones de verificación existentes (verify*)
+  - Añadir nuevas aserciones para opciones de creación
+
+**Fase 2: Tests de Trimestre Básico** (2-3 horas)
+- [ ] `test_generateTrimester_createsAllSheets`
+- [ ] `test_generateTrimester_alumnosOrdenAlfabetico`
+- [ ] `test_generateTrimester_instrumentosOrdenCorrecto`
+- [ ] `test_generateTrimester_criteriosColoreados`
+- [ ] `test_generateTrimester_formulasMediaCorrectas`
+- [ ] `test_generateTrimester_enlacesEnInstrumentos`
+
+**Fase 3: Tests de Actualización** (2-3 horas)
+- [ ] `test_regenerate_preservaCalificaciones`
+- [ ] `test_regenerate_añadeNuevosAlumnos`
+- [ ] `test_regenerate_añadeNuevosInstrumentos`
+- [ ] `test_regenerate_preservaObservaciones`
+- [ ] `test_regenerate_actualizaMediasContinua`
+
+**Fase 4: Tests de Opciones de Creación** (1-2 horas)
+- [ ] `test_options_estadisticasDesactivada_noCrearHoja`
+- [ ] `test_options_estadisticasActivada_creaHoja`
+- [ ] `test_options_estadisticasDesactivada_eliminaExistente`
+- [ ] `test_options_mediaContinuaDesactivada_eliminaExistente`
+- [ ] `test_options_observacionesDesactivada_noElimina`
+- [ ] `test_options_persistenciaEntreSesiones`
+
+**Fase 5: Tests de Menús** (1 hora)
+- [ ] `test_menu_calculoMedias_cambiaFormulas`
+- [ ] `test_menu_calculoMedias_verificaHojaActiva`
+- [ ] `test_menu_estadisticas_verificaHojaActiva`
+
+#### Ejecución
+
+```javascript
+// En test_runner.gs
+function runAllIntegrationTests() {
+  Logger.log('=== TESTS DE INTEGRACIÓN AUTOMATIZADOS ===\n');
+  
+  // Setup global
+  integration_setupFixtures();
+  
+  try {
+    runTrimesterTests();      // Fase 2
+    runUpdateTests();         // Fase 3
+    runOptionsTests();        // Fase 4
+    runMenuTests();           // Fase 5
+  } finally {
+    // Cleanup siempre se ejecuta
+    integration_teardown();
+  }
+  
+  Logger.log('=== FIN TESTS DE INTEGRACIÓN ===');
+}
+
+// Comando npm (opcional si se configura clasp)
+// npm run test:integration
+```
+
+#### Consideraciones
+
+1. **Aislamiento**: Cada suite debe empezar con estado limpio
+2. **Idempotencia**: Ejecutar dos veces debe dar mismo resultado
+3. **Velocidad**: Usar batch operations donde sea posible
+4. **Fixtures mínimos**: Solo los datos necesarios para cada test
+5. **Logs claros**: Indicar qué se está probando en cada momento
+
+#### Migración
+
+1. Mantener `test_integration.gs` actual como referencia
+2. Marcar funciones antiguas como `@deprecated`
+3. Documentar equivalencia entre tests manuales y automatizados
+4. Una vez validados los nuevos tests, eliminar los antiguos
