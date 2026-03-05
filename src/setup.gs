@@ -7,7 +7,125 @@
  * 
  * NOTA: Los menús de Google Sheets se recrean cada vez que se abre el documento.
  * No son "permanentes" en disco, pero onOpen() los crea automáticamente.
+ * 
+ * OPCIONES DE CREACIÓN:
+ * El sistema permite configurar qué hojas se crean al generar un trimestre.
+ * Las opciones se guardan usando PropertiesService (persistentes).
+ * - Crear Estadísticas: false por defecto
+ * - Crear Media Continua: true por defecto
+ * - Crear Observaciones: false por defecto
  */
+
+// ============================================================
+// CONSTANTES DE OPCIONES
+// ============================================================
+const OPTION_KEYS = {
+  CREAR_ESTADISTICAS: 'opcion_crear_estadisticas',
+  CREAR_MEDIA_CONTINUA: 'opcion_crear_media_continua',
+  CREAR_OBSERVACIONES: 'opcion_crear_observaciones'
+};
+
+const OPTION_DEFAULTS = {
+  [OPTION_KEYS.CREAR_ESTADISTICAS]: false,
+  [OPTION_KEYS.CREAR_MEDIA_CONTINUA]: true,
+  [OPTION_KEYS.CREAR_OBSERVACIONES]: false
+};
+
+// ============================================================
+// GESTIÓN DE OPCIONES (PropertiesService)
+// ============================================================
+
+/**
+ * Obtiene el valor de una opción de creación.
+ * @param {string} key - Clave de la opción
+ * @returns {boolean} Valor de la opción
+ */
+function getCreationOption(key) {
+  const props = PropertiesService.getDocumentProperties();
+  const value = props.getProperty(key);
+  
+  if (value === null) {
+    return OPTION_DEFAULTS[key] || false;
+  }
+  
+  return value === 'true';
+}
+
+/**
+ * Establece el valor de una opción de creación.
+ * @param {string} key - Clave de la opción
+ * @param {boolean} value - Nuevo valor
+ */
+function setCreationOption(key, value) {
+  const props = PropertiesService.getDocumentProperties();
+  props.setProperty(key, value.toString());
+}
+
+/**
+ * Alterna el valor de una opción de creación.
+ * @param {string} key - Clave de la opción
+ * @returns {boolean} Nuevo valor
+ */
+function toggleCreationOption(key) {
+  const current = getCreationOption(key);
+  setCreationOption(key, !current);
+  return !current;
+}
+
+/**
+ * Obtiene todas las opciones de creación actuales.
+ * @returns {Object} Objeto con todas las opciones
+ */
+function getAllCreationOptions() {
+  return {
+    crearEstadisticas: getCreationOption(OPTION_KEYS.CREAR_ESTADISTICAS),
+    crearMediaContinua: getCreationOption(OPTION_KEYS.CREAR_MEDIA_CONTINUA),
+    crearObservaciones: getCreationOption(OPTION_KEYS.CREAR_OBSERVACIONES)
+  };
+}
+
+// ============================================================
+// FUNCIONES DE MENÚ PARA TOGGLE DE OPCIONES
+// ============================================================
+
+/**
+ * Toggle: Crear Estadísticas
+ */
+function menu_toggleCrearEstadisticas() {
+  const newValue = toggleCreationOption(OPTION_KEYS.CREAR_ESTADISTICAS);
+  SpreadsheetApp.getActiveSpreadsheet().toast(
+    newValue ? 'Estadísticas SE CREARÁN al generar trimestre' : 'Estadísticas NO se crearán al generar trimestre',
+    newValue ? '✓ Activado' : '○ Desactivado',
+    3
+  );
+  createMenus();
+}
+
+/**
+ * Toggle: Crear Media Continua
+ */
+function menu_toggleCrearMediaContinua() {
+  const newValue = toggleCreationOption(OPTION_KEYS.CREAR_MEDIA_CONTINUA);
+  SpreadsheetApp.getActiveSpreadsheet().toast(
+    newValue ? 'Media Continua SE CREARÁ al generar trimestre' : 'Media Continua NO se creará al generar trimestre',
+    newValue ? '✓ Activado' : '○ Desactivado',
+    3
+  );
+  createMenus();
+}
+
+/**
+ * Toggle: Crear Observaciones
+ */
+function menu_toggleCrearObservaciones() {
+  const newValue = toggleCreationOption(OPTION_KEYS.CREAR_OBSERVACIONES);
+  SpreadsheetApp.getActiveSpreadsheet().toast(
+    newValue ? 'Observaciones SE CREARÁN al generar trimestre' : 'Observaciones NO se crearán al generar trimestre',
+    newValue ? '✓ Activado' : '○ Desactivado',
+    3
+  );
+  createMenus();
+}
 
 /**
  * Trigger automático que se ejecuta al abrir el documento.
@@ -23,6 +141,7 @@ function onOpen() {
  * 
  * Crea:
  * - 📊 Generar Trimestre: siempre visible
+ * - ⚙️ Opciones de creación: configurar qué hojas se crean
  * - 📉 Cálculo de Medias: funciona solo en hojas mediasN/mediasContinua
  * - 📈 Estadísticas: funciona solo en hoja estadísticas
  */
@@ -36,19 +155,31 @@ function createMenus() {
     .addItem('Trimestre 3', 'trimester3')
     .addToUi();
   
+  // ========== MENÚ: Opciones de creación ==========
+  const options = getAllCreationOptions();
+  const checkEstad = options.crearEstadisticas ? '✓ ' : '○ ';
+  const checkMedia = options.crearMediaContinua ? '✓ ' : '○ ';
+  const checkObserv = options.crearObservaciones ? '✓ ' : '○ ';
+  
+  ui.createMenu('⚙️ Opciones de creación')
+    .addItem(checkEstad + 'Crear Estadísticas', 'menu_toggleCrearEstadisticas')
+    .addItem(checkMedia + 'Crear Media Continua', 'menu_toggleCrearMediaContinua')
+    .addItem(checkObserv + 'Crear Observaciones', 'menu_toggleCrearObservaciones')
+    .addToUi();
+  
   // ========== MENÚ: Cálculo de Medias ==========
   // Detectar modo activo si estamos en una hoja de medias
   const ss = SpreadsheetApp.getActive();
   const activeSheet = ss.getActiveSheet();
   const sheetName = activeSheet ? activeSheet.getName() : '';
   
-  let checkComp = '';
-  let checkCrit = '';
+  let checkComp = '○ ';
+  let checkCrit = '○ ';
   
   if (sheetName.startsWith('medias') || sheetName === 'mediasContinua') {
     const modoActivo = detectarModoMedias(activeSheet);
-    checkComp = modoActivo === 'competencias' ? '✓ ' : '';
-    checkCrit = modoActivo === 'criterios' ? '✓ ' : '';
+    checkComp = modoActivo === 'competencias' ? '✓ ' : '○ ';
+    checkCrit = modoActivo === 'criterios' ? '✓ ' : '○ ';
   }
   
   ui.createMenu('📉 Cálculo de Medias')

@@ -52,6 +52,9 @@ function generateTrimester(n, showAlert = true) {
     return;
   }
 
+  // ---------- Obtener opciones de creación ----------
+  const options = getAllCreationOptions();
+
   // ---------- locate columns "TrimestreN" and "CriteriosN" in 'instrumentos' sheet ----------
   const hdrInst = sheetInstruments.getRange(1,1,1, sheetInstruments.getLastColumn()).getValues()[0];
   const colTrimestreIdx = hdrInst.indexOf("Trimestre" + n);
@@ -91,22 +94,50 @@ function generateTrimester(n, showAlert = true) {
   // ---------- Call medias constructor (build mediasN). It will compute columns for each clave  ----------
   sheetMedias = buildMedias(n, calificacionesResult.sheetCalif, alumnos, sheetCriteria, claveToColor);
 
-  // ---------- Call mediasContinua constructor (media acumulada de todos los trimestres) ----------
-  buildMediasContinua(alumnos, sheetCriteria, claveToColor);
+  // ---------- Call mediasContinua constructor (condicional) ----------
+  if (options.crearMediaContinua) {
+    buildMediasContinua(alumnos, sheetCriteria, claveToColor);
+  } else {
+    // Si la opción está desactivada, eliminar la hoja si existe
+    const existingMediasContinua = ss.getSheetByName('mediasContinua');
+    if (existingMediasContinua) {
+      ss.deleteSheet(existingMediasContinua);
+    }
+  }
 
-  // ---------- Call observaciones constructor (build observacionesN if not exists) ----------
-  const sheetObservaciones = buildObservaciones(n, alumnos);
+  // ---------- Call observaciones constructor (condicional) ----------
+  let sheetObservaciones = null;
+  if (options.crearObservaciones) {
+    sheetObservaciones = buildObservaciones(n, alumnos);
+  }
+  // Si no está activa la opción, NO eliminamos observaciones existentes (solo ignoramos)
 
-  // ---------- Build estadísticas sheet (only once after first trimester) ----------
-  // Siempre reconstruir/limpiar estadísticas para evitar estados inconsistentes
-  buildEstadisticasSheet();
-  estadisticas_populateInstrumentsList(ss.getSheetByName('estadísticas'));
+  // ---------- Build estadísticas sheet (condicional) ----------
+  if (options.crearEstadisticas) {
+    buildEstadisticasSheet();
+    estadisticas_populateInstrumentsList(ss.getSheetByName('estadísticas'));
+  } else {
+    // Si la opción está desactivada, eliminar la hoja si existe
+    const existingEstadisticas = ss.getSheetByName('estadísticas');
+    if (existingEstadisticas) {
+      ss.deleteSheet(existingEstadisticas);
+    }
+  }
 
   // ------------------ Call to get links --------------
   writeLinks(n, calificacionesResult.sheetCalif, sheetMedias, sheetObservaciones);
 
   if (showAlert) {
-    SpreadsheetApp.getUi().alert("Calificaciones, medias y observaciones para Trimestre " + n + " generadas/actualizadas correctamente.");
+    // Construir mensaje con hojas creadas
+    let hojasCreadas = ['calificaciones' + n, 'medias' + n];
+    if (options.crearMediaContinua) hojasCreadas.push('mediasContinua');
+    if (options.crearObservaciones) hojasCreadas.push('observaciones' + n);
+    if (options.crearEstadisticas) hojasCreadas.push('estadísticas');
+    
+    SpreadsheetApp.getUi().alert(
+      "Trimestre " + n + " generado correctamente.\n\n" +
+      "Hojas creadas/actualizadas:\n• " + hojasCreadas.join('\n• ')
+    );
   }
 }
 

@@ -298,12 +298,14 @@ Media_CompetenciaX = AVERAGE(criterios de esa competencia)
 - Se **actualiza** si existe: inserta nuevos alumnos en orden alfabético, conserva datos existentes
 - NO se elimina/recrea para preservar observaciones escritas manualmente
 
-> 💡 **Propuesta de mejora - Hoja opcional**: Convertir `observacionesN` en una hoja **opcional**. El usuario podría elegir si crearla o no mediante:
-> - Un parámetro en la configuración del sistema
-> - Una opción en el menú al generar el trimestre
-> - Un checkbox o celda de configuración en la hoja `instrumentos`
+> ✅ **Implementado**: Las hojas `observacionesN`, `mediasContinua` y `estadísticas` son ahora **opcionales**. Se configuran desde el menú **⚙️ Opciones de creación**:
+> - **Crear Estadísticas**: Desactivado por defecto
+> - **Crear Media Continua**: Activado por defecto
+> - **Crear Observaciones**: Desactivado por defecto
 >
-> Esto simplificaría el documento para usuarios que no necesitan registrar asistencia.
+> Si se desactiva una opción y la hoja ya existía:
+> - `estadísticas` y `mediasContinua`: Se eliminan
+> - `observacionesN`: Se conserva (no se elimina para no perder datos)
 
 ---
 
@@ -399,7 +401,8 @@ Marca los instrumentos con X para incluir en el análisis:
 
 **Prioridad alta** (mejoras de usabilidad):
 - [ ] **Menús de criterios dinámicos**: Actualizar automáticamente los desplegables de instrumentos cuando cambien los criterios
-- [ ] **Hojas opcionales**: Permitir elegir si crear `observacionesN` y `estadísticas`
+- [x] ~~**Hojas opcionales**: Permitir elegir si crear `observacionesN`, `mediasContinua` y `estadísticas`~~ ✅ Implementado via menú "⚙️ Opciones de creación"
+- [ ] **Logs y barras de progreso**: Incluir feedback visual durante la ejecución de comandos (toasts, spinners, logs en tiempo real)
 
 **Prioridad media** (funcionalidades adicionales):
 - [ ] Exportación a PDF/informe
@@ -454,6 +457,7 @@ El sistema incluye tres menús que se crean automáticamente al abrir el documen
 | Menú | Funcionalidad | Restricción |
 |------|---------------|-------------|
 | **📊 Generar Trimestre** | Generar T1, T2, T3 | Ninguna (siempre funciona) |
+| **⚙️ Opciones de creación** | Configurar qué hojas se crean | Ninguna (siempre funciona) |
 | **📉 Cálculo de Medias** | Cambiar fórmula de Media Final | Solo en hojas `mediasN` / `mediasContinua` |
 | **📈 Estadísticas** | Generar análisis | Solo en hoja `estadísticas` |
 

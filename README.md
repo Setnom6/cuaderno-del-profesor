@@ -35,22 +35,26 @@ Completa estas 3 hojas antes de generar calificaciones:
 
 ### Uso
 
-1. Usa el menú **📊 Generar Trimestre → Trimestre 1** (o T2, T3)
-2. Se generarán: `calificaciones1`, `medias1`, `mediasContinua`, `observaciones1`, `estadísticas`
-3. Introduce las notas en `calificaciones1`
-4. Para análisis: marca instrumentos con X en `estadísticas` y usa **📈 Estadísticas → Generar Análisis**
+1. **(Opcional)** Configura qué hojas crear con **⚙️ Opciones de creación**:
+   - ○ Crear Estadísticas (desactivado por defecto)
+   - ✓ Crear Media Continua (activado por defecto)
+   - ○ Crear Observaciones (desactivado por defecto)
+2. Usa el menú **📊 Generar Trimestre → Trimestre 1** (o T2, T3)
+3. Se generarán las hojas según la configuración (siempre: `calificaciones1`, `medias1`)
+4. Introduce las notas en `calificaciones1`
+5. Para análisis: marca instrumentos con X en `estadísticas` y usa **📈 Estadísticas → Generar Análisis**
 
 > ⚠️ Si los menús no aparecen: **Extensiones → Apps Script → ejecutar `createMenus()`**
 
 ### Hojas generadas
 
-| Hoja | Descripción |
-|------|-------------|
-| `calificacionesN` | Notas por instrumento y criterio, con media por instrumento |
-| `mediasN` | Medias por criterio y por competencia (trimestre N) |
-| `mediasContinua` | Medias acumuladas de todos los trimestres |
-| `observacionesN` | Faltas, retrasos y observaciones de alumnos |
-| `estadísticas` | Análisis comparativo de instrumentos seleccionados |
+| Hoja | Descripción | Opcional |
+|------|-------------|----------|
+| `calificacionesN` | Notas por instrumento y criterio, con media por instrumento | No |
+| `mediasN` | Medias por criterio y por competencia (trimestre N) | No |
+| `mediasContinua` | Medias acumuladas de todos los trimestres | Sí (activa por defecto) |
+| `observacionesN` | Faltas, retrasos y observaciones de alumnos | Sí |
+| `estadísticas` | Análisis comparativo de instrumentos seleccionados | Sí |
 
 > 📖 Más detalles sobre cada hoja en [docs/SISTEMA.md](docs/SISTEMA.md)
 
